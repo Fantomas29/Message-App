@@ -59,6 +59,7 @@ public class MessageAppIHM {
     protected static final String MAIN_VIEW = "MAIN_VIEW";
     protected static final String PROFILE_VIEW = "PROFILE_VIEW";
     protected static final String USER_LIST_VIEW = "USER_LIST_VIEW";
+    protected static final String MESSAGE_VIEW = "MESSAGE_VIEW";
 
     /**
      * Constructeur.
@@ -114,6 +115,14 @@ public class MessageAppIHM {
             @Override
             public void onEvent(NavigationEvents.ShowProfileViewEvent event) {
                 showProfileView(mMessageApp.getProfileView().getComponent());
+            }
+        });
+
+        // Écouter l'événement de navigation pour les messages
+        eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, new IEventListener<NavigationEvents.ShowMessageViewEvent>() {
+            @Override
+            public void onEvent(NavigationEvents.ShowMessageViewEvent event) {
+                showMessageView(mMessageApp.getMessageView().getComponent());
             }
         });
 
@@ -395,6 +404,35 @@ public class MessageAppIHM {
 
         // Afficher la vue de liste des utilisateurs
         mCardLayout.show(mMainPanel, USER_LIST_VIEW);
+    }
+
+    /**
+     * Méthode appelée pour afficher la vue des messages
+     *
+     * @param messageView La vue des messages à afficher
+     */
+    public void showMessageView(JComponent messageView) {
+        // Vérifiez d'abord si la vue est déjà dans le CardLayout
+        boolean messageViewExists = false;
+        for (Component comp : mMainPanel.getComponents()) {
+            if (comp.equals(messageView)) {
+                messageViewExists = true;
+                break;
+            }
+        }
+
+        // Si la vue n'existe pas encore, l'ajouter
+        if (!messageViewExists) {
+            mMainPanel.add(messageView, MESSAGE_VIEW);
+        } else {
+            // Sinon, la remplacer
+            mMainPanel.remove(messageView);
+            mMainPanel.add(messageView, MESSAGE_VIEW);
+            mMainPanel.revalidate();
+        }
+
+        // Afficher la vue des messages
+        mCardLayout.show(mMainPanel, MESSAGE_VIEW);
     }
 
     /**

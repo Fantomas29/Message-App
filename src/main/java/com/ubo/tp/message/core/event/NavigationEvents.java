@@ -27,9 +27,16 @@ public class NavigationEvents {
     }
 
     /**
-     * Événement pour demander l'affichage de la vue de liste des utilisateurs
+     * Événement pour demander l'affichage de la vue des utilisateurs
      */
     public static class ShowUserListViewEvent implements IEvent {
+        // Pas de données supplémentaires nécessaires
+    }
+
+    /**
+     * Événement pour demander l'affichage de la vue des messages
+     */
+    public static class ShowMessageViewEvent implements IEvent {
         // Pas de données supplémentaires nécessaires
     }
 }
