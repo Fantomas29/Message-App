@@ -163,7 +163,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Liste des utilisateurs"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/logo_20.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/user_list.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon userListIcon = new ImageIcon(img);
@@ -178,6 +178,30 @@ public class MessageAppMenuBar extends JMenuBar {
             public void actionPerformed(ActionEvent e) {
                 // Appel à la méthode pour afficher la liste des utilisateurs
                 mMessageApp.showUserList();
+            }
+        });
+
+        // Création de l'item "Messages"
+        JMenuItem messagesMenuItem = new JMenuItem("Messages");
+        messagesMenuItem.setMnemonic(KeyEvent.VK_M);
+
+        // Ajout d'une icône à l'item "Messages"
+        try {
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/message.png"));
+            // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
+            java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
+            ImageIcon messageIcon = new ImageIcon(img);
+            messagesMenuItem.setIcon(messageIcon);
+        } catch (Exception e) {
+            System.err.println("Impossible de charger l'icône pour Messages");
+        }
+
+        // Ajout d'un écouteur d'événement pour afficher les messages
+        messagesMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Appel à la méthode pour afficher les messages
+                mMessageApp.showMessages();
             }
         });
 
@@ -208,6 +232,7 @@ public class MessageAppMenuBar extends JMenuBar {
         // Ajout des items au menu "Utilisateur"
         mUserMenu.add(profileMenuItem);
         mUserMenu.add(userListMenuItem);
+        mUserMenu.add(messagesMenuItem);
         mUserMenu.addSeparator(); // Séparateur entre les fonctionnalités et la déconnexion
         mUserMenu.add(mLogoutMenuItem);
 

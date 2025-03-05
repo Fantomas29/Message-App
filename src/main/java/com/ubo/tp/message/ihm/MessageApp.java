@@ -10,7 +10,6 @@ import main.java.com.ubo.tp.message.core.database.IDatabase;
 import main.java.com.ubo.tp.message.core.directory.IWatchableDirectory;
 import main.java.com.ubo.tp.message.core.directory.WatchableDirectory;
 import main.java.com.ubo.tp.message.core.event.EventManager;
-import main.java.com.ubo.tp.message.core.event.IEvent;
 import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
@@ -21,6 +20,10 @@ import main.java.com.ubo.tp.message.ihm.component.login.ILoginController;
 import main.java.com.ubo.tp.message.ihm.component.login.ILoginView;
 import main.java.com.ubo.tp.message.ihm.component.login.LoginController;
 import main.java.com.ubo.tp.message.ihm.component.login.LoginView;
+import main.java.com.ubo.tp.message.ihm.component.message.IMessageController;
+import main.java.com.ubo.tp.message.ihm.component.message.IMessageView;
+import main.java.com.ubo.tp.message.ihm.component.message.MessageController;
+import main.java.com.ubo.tp.message.ihm.component.message.MessageView;
 import main.java.com.ubo.tp.message.ihm.component.profile.IProfileController;
 import main.java.com.ubo.tp.message.ihm.component.profile.IProfileView;
 import main.java.com.ubo.tp.message.ihm.component.profile.ProfileController;
@@ -81,6 +84,16 @@ public class MessageApp {
 	protected IUserListController mUserListController;
 
 	/**
+	 * Vue des messages
+	 */
+	protected IMessageView mMessageView;
+
+	/**
+	 * Contrôleur des messages
+	 */
+	protected IMessageController mMessageController;
+
+	/**
 	 * Classe de surveillance de répertoire
 	 */
 	protected IWatchableDirectory mWatchableDirectory;
@@ -136,6 +149,11 @@ public class MessageApp {
 		this.mUserListView = new UserListView(null);
 		this.mUserListController = new UserListController(mDatabase, mEntityManager, mSession, mUserListView);
 		((UserListView) mUserListView).mController = mUserListController;
+
+		// Initialisation du composant de messages
+		this.mMessageView = new MessageView(null);
+		this.mMessageController = new MessageController(mDatabase, mEntityManager, mSession, mMessageView);
+		((MessageView) mMessageView).mController = mMessageController;
 	}
 
 	/**
@@ -198,6 +216,14 @@ public class MessageApp {
 			public void onEvent(NavigationEvents.ShowUserListViewEvent event) {
 				// Affichage de la vue de liste des utilisateurs
 				mIHM.showUserListView(mUserListView.getComponent());
+			}
+		});
+
+		eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, new IEventListener<NavigationEvents.ShowMessageViewEvent>() {
+			@Override
+			public void onEvent(NavigationEvents.ShowMessageViewEvent event) {
+				// Affichage de la vue des messages
+				mIHM.showMessageView(mMessageView.getComponent());
 			}
 		});
 	}
@@ -391,6 +417,24 @@ public class MessageApp {
 	}
 
 	/**
+	 * Obtient la vue des messages
+	 *
+	 * @return La vue des messages
+	 */
+	public IMessageView getMessageView() {
+		return mMessageView;
+	}
+
+	/**
+	 * Obtient le contrôleur des messages
+	 *
+	 * @return Le contrôleur des messages
+	 */
+	public IMessageController getMessageController() {
+		return mMessageController;
+	}
+
+	/**
 	 * Affiche l'application.
 	 */
 	public void show() {
@@ -419,6 +463,19 @@ public class MessageApp {
 			mUserListController.refreshUserList();
 			// Émission d'un événement pour demander l'affichage de la vue des utilisateurs
 			EventManager.getInstance().fireEvent(new NavigationEvents.ShowUserListViewEvent());
+		}
+	}
+
+	/**
+	 * Affiche la vue des messages
+	 */
+	public void showMessages() {
+		// Vérifie qu'un utilisateur est connecté
+		if (mSession.getConnectedUser() != null) {
+			// Initialisation de la liste des messages
+			mMessageController.refreshMessages();
+			// Émission d'un événement pour demander l'affichage de la vue des messages
+			EventManager.getInstance().fireEvent(new NavigationEvents.ShowMessageViewEvent());
 		}
 	}
 }
