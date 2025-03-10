@@ -38,6 +38,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
+import main.java.com.ubo.tp.message.core.event.EventManager;
+import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 
@@ -114,6 +116,26 @@ public class UserListView extends AbstractComponent implements IUserListView {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
+        // Bouton Page d'accueil
+        JButton homeButton = new JButton("Page d'accueil");
+        homeButton.setPreferredSize(new Dimension(150, 30));
+        homeButton.setBackground(new Color(230, 230, 250));
+        homeButton.setForeground(new Color(50, 50, 100));
+        homeButton.setFont(new Font("Arial", Font.BOLD, 12));
+        homeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Émission d'un événement pour retourner à la page d'accueil
+                EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
+            }
+        });
+
+        // Panel pour le titre et le bouton
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.CENTER);
+        topPanel.add(homeButton, BorderLayout.EAST);
+
         // Panel pour la liste des utilisateurs
         mUsersPanel = new JPanel();
         mUsersPanel.setLayout(new BoxLayout(mUsersPanel, BoxLayout.Y_AXIS));
@@ -128,7 +150,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
         JPanel searchPanel = createSearchPanel();
 
         // Ajout des composants au panel principal
-        mMainPanel.add(titleLabel, BorderLayout.NORTH);
+        mMainPanel.add(topPanel, BorderLayout.NORTH);
         mMainPanel.add(scrollPane, BorderLayout.CENTER);
         mMainPanel.add(searchPanel, BorderLayout.SOUTH);
     }
@@ -192,7 +214,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
         userPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
                 new EmptyBorder(5, 5, 5, 5)));
-        userPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, USER_PANEL_HEIGHT));
+        userPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, USER_PANEL_HEIGHT + 20));
 
         // Contraintes pour le layout
         GridBagConstraints gbc = new GridBagConstraints();
@@ -242,6 +264,16 @@ public class UserListView extends AbstractComponent implements IUserListView {
         tagLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         tagLabel.setForeground(Color.GRAY);
 
+        // Informations sur les followers et abonnements
+        int followersCount = mController != null ?
+                ((UserListController) mController).getDatabase().getFollowersCount(user) : 0;
+        int followingCount = user.getFollows().size();
+
+        JLabel statsLabel = new JLabel("<html><font color='#666666'>" +
+                followersCount + " abonnés · " +
+                followingCount + " abonnements</font></html>");
+        statsLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+
         // Ajout du nom
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -254,6 +286,11 @@ public class UserListView extends AbstractComponent implements IUserListView {
         gbc.gridx = 1;
         gbc.gridy = 1;
         userPanel.add(tagLabel, gbc);
+
+        // Ajout des statistiques
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        userPanel.add(statsLabel, gbc);
 
         // Création des boutons avec une taille fixe et plus visible
         final JButton followButton = new JButton("Suivre");
@@ -283,7 +320,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
         followButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Clic sur le bouton Suivre pour @" + user.getUserTag());
                 if (mController != null) {
                     mController.followUser(user);
                 }
@@ -333,7 +369,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
         mDisplayedUsers.clear();
         mUserButtons.clear();
 
-        System.out.println("Mise à jour de la liste des utilisateurs : " + users.size() + " utilisateurs reçus");
 
         // Utiliser un Map pour éliminer les doublons par UUID
         Map<UUID, User> uniqueUsers = new HashMap<>();
@@ -349,7 +384,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
             uniqueUsers.put(user.getUuid(), user);
         }
 
-        System.out.println("Nombre d'utilisateurs uniques à afficher : " + uniqueUsers.size());
 
         // Ajouter les utilisateurs uniques à l'affichage
         for (User user : uniqueUsers.values()) {
@@ -389,10 +423,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
             return;
         }
 
-        System.out.println("Mise à jour du statut d'abonnement pour l'utilisateur @" + connectedUser.getUserTag());
-        System.out.println("Nombre d'utilisateurs dans la vue : " + mDisplayedUsers.size());
-        System.out.println("Nombre de boutons stockés : " + mUserButtons.size());
-
         // Pour chaque utilisateur affiché
         for (User user : mDisplayedUsers) {
             // Récupérer les boutons associés à cet utilisateur
@@ -406,7 +436,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
                 if (user.getUuid().equals(connectedUser.getUuid())) {
                     followButton.setVisible(false);
                     unfollowButton.setVisible(false);
-                    System.out.println("Utilisateur @" + user.getUserTag() + " - C'est l'utilisateur connecté, pas de boutons affichés");
                     continue;
                 }
 
@@ -416,10 +445,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
                 // Configuration des boutons en fonction du statut d'abonnement
                 followButton.setVisible(!isFollowing);
                 unfollowButton.setVisible(isFollowing);
-
-                System.out.println("Utilisateur @" + user.getUserTag() + " - Est suivi: " + isFollowing +
-                        " - Bouton Suivre visible: " + followButton.isVisible() +
-                        " - Bouton Ne plus suivre visible: " + unfollowButton.isVisible());
             } else {
                 System.out.println("Pas de boutons trouvés pour l'utilisateur @" + user.getUserTag());
             }

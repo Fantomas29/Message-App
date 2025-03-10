@@ -1,0 +1,89 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.ubo.tp.message'
+version = '1.0.0'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Ajoutez vos dépendances ici si nécessaire
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// Définition de la structure du projet qui ne suit pas la convention standard
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
+// Configuration de l'application principale
+application {
+    mainClassName = 'main.java.com.ubo.tp.message.MessageAppLauncher'
+}
+
+// Configuration pour créer un JAR exécutable
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'main.java.com.ubo.tp.message.MessageAppLauncher',
+                'Implementation-Title': 'MessageApp',
+                'Implementation-Version': version
+        )
+    }
+
+    // Pour inclure toutes les dépendances dans le JAR (fat JAR)
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    // Pour inclure les ressources
+    from('src/main/resources') {
+        include '**/*'
+    }
+
+    // Eviter les doublons de signatures de fichiers
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Tâche pour exécuter le JAR après sa création
+task runJar(type: JavaExec, dependsOn: jar) {
+    description = 'Exécute le JAR de l\'application'
+    group = 'Application'
+
+    classpath = files(jar.archiveFile)
+    mainClass = 'main.java.com.ubo.tp.message.MessageAppLauncher'
+
+    // Ajoutez ici des arguments si nécessaire
+    // args 'arg1', 'arg2'
+
+    // Définir le répertoire de travail
+    workingDir = projectDir
+
+    // Assurez-vous que le JAR est créé avant d'exécuter cette tâche
+    doFirst {
+        println "Exécution du JAR: ${jar.archiveFileName.get()}"
+    }
+}
+
+// Raccourci pour tâche complète: build + exécution
+task buildAndRun(dependsOn: [build, runJar]) {
+    description = 'Compile l\'application et exécute le JAR'
+    group = 'Application'
+}

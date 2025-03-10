@@ -2,7 +2,6 @@ package main.java.com.ubo.tp.message.ihm.component.message;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -20,25 +19,20 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import javax.swing.JScrollBar;
+import javax.swing.SwingUtilities;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import main.java.com.ubo.tp.message.core.event.EventManager;
+import main.java.com.ubo.tp.message.core.event.NavigationEvents;
+import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.Message;
 import main.java.com.ubo.tp.message.datamodel.User;
+import main.java.com.ubo.tp.message.ihm.MessageNotificationManager;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
+
 
 /**
  * Vue pour la gestion des messages
@@ -59,6 +53,12 @@ public class MessageView extends AbstractComponent implements IMessageView {
      * Référence au contrôleur
      */
     public IMessageController mController;
+
+    /**
+     * Session de l'application
+     */
+    protected ISession mSession;
+
 
     /**
      * Panel principal
@@ -110,6 +110,11 @@ public class MessageView extends AbstractComponent implements IMessageView {
         this.mDisplayedMessages = new ArrayList<>();
         this.mDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
+        // Si le contrôleur est défini, récupérer la session
+        if (controller instanceof MessageController) {
+            this.mSession = ((MessageController) controller).mSession;
+        }
+
         // Initialisation des composants graphiques
         this.initComponents();
     }
@@ -135,6 +140,25 @@ public class MessageView extends AbstractComponent implements IMessageView {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
+        // Bouton Page d'accueil
+        JButton homeButton = new JButton("Page d'accueil");
+        homeButton.setPreferredSize(new Dimension(150, 30));
+        homeButton.setBackground(new Color(230, 230, 250));
+        homeButton.setForeground(new Color(50, 50, 100));
+        homeButton.setFont(new Font("Arial", Font.BOLD, 12));
+        homeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Émission d'un événement pour retourner à la page d'accueil
+                EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
+            }
+        });
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.CENTER);
+        topPanel.add(homeButton, BorderLayout.EAST);
+
         // Panel pour la liste des messages
         mMessagesPanel = new JPanel();
         mMessagesPanel.setLayout(new BoxLayout(mMessagesPanel, BoxLayout.Y_AXIS));
@@ -157,7 +181,7 @@ public class MessageView extends AbstractComponent implements IMessageView {
         contentPanel.add(messageInputPanel, BorderLayout.SOUTH);
 
         // Ajout des composants au panel principal
-        mMainPanel.add(titleLabel, BorderLayout.NORTH);
+        mMainPanel.add(topPanel, BorderLayout.NORTH);
         mMainPanel.add(contentPanel, BorderLayout.CENTER);
         mMainPanel.add(searchPanel, BorderLayout.SOUTH);
     }
@@ -288,9 +312,36 @@ public class MessageView extends AbstractComponent implements IMessageView {
     protected JPanel createMessagePanel(Message message) {
         // Panel principal du message
         JPanel messagePanel = new JPanel(new GridBagLayout());
-        messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
-                new EmptyBorder(10, 10, 10, 10)));
+
+        // Récupération de l'utilisateur connecté - assurez-vous que mSession est initialisé
+        User connectedUser = null;
+        if (mSession != null) {
+            connectedUser = mSession.getConnectedUser();
+        } else if (mController != null && mController instanceof MessageController) {
+            connectedUser = ((MessageController) mController).mSession.getConnectedUser();
+        }
+
+        // Vérification si le message est de l'utilisateur connecté
+        boolean isMyMessage = false;
+        if (connectedUser != null && message.getSender() != null) {
+            isMyMessage = connectedUser.getUuid().equals(message.getSender().getUuid());
+        }
+
+        // Couleur de fond différente pour les messages de l'utilisateur connecté
+        if (isMyMessage) {
+            // Couleur verte distincte pour vos propres messages
+            messagePanel.setBackground(new Color(230, 255, 230)); // Vert plus visible
+            messagePanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 3, 1, 0, new Color(50, 180, 50)),
+                    new EmptyBorder(10, 10, 10, 10)));
+        } else {
+            // Fond neutre pour les autres messages
+            messagePanel.setBackground(new Color(250, 250, 255)); // Très léger bleu
+            messagePanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
+                    new EmptyBorder(10, 10, 10, 10)));
+        }
+
         messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, MESSAGE_PANEL_HEIGHT));
 
         // Contraintes pour le layout
@@ -403,10 +454,10 @@ public class MessageView extends AbstractComponent implements IMessageView {
         // Convertir le Set en List pour pouvoir trier
         List<Message> sortedMessages = new ArrayList<>(messages);
 
-        // Trier les messages par date (du plus récent au plus ancien)
-        sortedMessages.sort((m1, m2) -> Long.compare(m2.getEmissionDate(), m1.getEmissionDate()));
+        // Trier les messages par date (du plus ancien au plus récent pour un affichage style chat)
+        sortedMessages.sort((m1, m2) -> Long.compare(m1.getEmissionDate(), m2.getEmissionDate()));
 
-        // Ajouter les nouveaux messages
+        // Ajouter les messages
         for (Message message : sortedMessages) {
             mDisplayedMessages.add(message);
             JPanel messagePanel = createMessagePanel(message);
@@ -426,6 +477,13 @@ public class MessageView extends AbstractComponent implements IMessageView {
         // Forcer la mise à jour de l'affichage
         mMessagesPanel.revalidate();
         mMessagesPanel.repaint();
+
+        // Faire défiler automatiquement vers le bas pour voir les messages les plus récents
+        SwingUtilities.invokeLater(() -> {
+            JScrollPane scrollPane = (JScrollPane) mMessagesPanel.getParent().getParent();
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
     }
 
     @Override
@@ -455,6 +513,9 @@ public class MessageView extends AbstractComponent implements IMessageView {
         if (mController != null) {
             mController.refreshMessages();
         }
+
+        // Marquer tous les messages comme lus quand on affiche la vue
+        MessageNotificationManager.getInstance().markAllAsRead();
     }
 
     @Override

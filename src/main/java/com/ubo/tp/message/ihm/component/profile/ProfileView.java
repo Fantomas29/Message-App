@@ -1,12 +1,6 @@
 package main.java.com.ubo.tp.message.ihm.component.profile;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Image;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -231,19 +225,12 @@ public class ProfileView extends AbstractComponent implements IProfileView {
             }
         });
 
-        // Bouton Annuler
-        mCancelButton = new JButton("Annuler");
-        mCancelButton.setPreferredSize(new Dimension(120, 30));
-        mCancelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                resetFields();
-            }
-        });
-
         // Bouton Quitter
-        JButton mQuitButton = new JButton("Quitter");
+        JButton mQuitButton = new JButton("Page d'accueil");
         mQuitButton.setPreferredSize(new Dimension(120, 30));
+        mQuitButton.setBackground(new Color(230, 230, 250));
+        mQuitButton.setForeground(new Color(50, 50, 100));
+        mQuitButton.setFont(new Font("Arial", Font.BOLD, 12));
         mQuitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -253,7 +240,6 @@ public class ProfileView extends AbstractComponent implements IProfileView {
 
         // Ajout des boutons au panel
         buttonPanel.add(mSaveButton);
-        buttonPanel.add(mCancelButton);
         buttonPanel.add(mQuitButton);
 
         // Ajout des panels au layout principal

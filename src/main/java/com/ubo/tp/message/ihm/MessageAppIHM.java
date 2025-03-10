@@ -21,6 +21,7 @@ import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
+import main.java.com.ubo.tp.message.ihm.component.login.LoginView;
 
 /**
  * Classe principale de l'interface utilisateur de l'application.
@@ -35,7 +36,7 @@ public class MessageAppIHM {
     /**
      * Vue principale de l'application.
      */
-    protected MessageAppMainView mMainView;
+    protected HomeView mMainView;
 
     /**
      * Fenêtre principale de l'application.
@@ -159,6 +160,9 @@ public class MessageAppIHM {
         // Initialisation de la barre de menu
         this.initMenuBar();
 
+        // Création du gestionnaire de notifications
+        new NotificationManager(mFrame);
+
         // Enregistrement des écouteurs d'événements de navigation
         this.registerNavigationEvents();
 
@@ -198,7 +202,7 @@ public class MessageAppIHM {
 
         // Ajout d'une icône à l'application
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/logo_message.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/logo_message.png"));
             java.awt.Image img = originalIcon.getImage().getScaledInstance(32, 32, java.awt.Image.SCALE_SMOOTH);
             mFrame.setIconImage(img);
         } catch (Exception e) {
@@ -215,11 +219,8 @@ public class MessageAppIHM {
         mMainPanel = new JPanel(mCardLayout);
         mFrame.getContentPane().add(mMainPanel, BorderLayout.CENTER);
 
-        // Initialisation de la vue principale
-        mMainView = new MessageAppMainView();
-
-        // Ajout de la vue comme observateur de la base de données
-        mMessageApp.getDatabase().addObserver(mMainView);
+        // Initialisation de la vue principale d'accueil
+        mMainView = new HomeView(mMessageApp.getSession(), mMessageApp);
 
         // Ajout des vues au CardLayout
         mMainPanel.add(mMessageApp.getLoginView().getComponent(), LOGIN_VIEW);
@@ -447,21 +448,38 @@ public class MessageAppIHM {
         // Mettre à jour le titre avec le nom de l'utilisateur
         mFrame.setTitle("MessageApp - " + connectedUser.getName() + " (@" + connectedUser.getUserTag() + ")");
 
-        // Message de bienvenue dans le log
-        mMainView.appendToEventLog("Utilisateur connecté : @" + connectedUser.getUserTag());
+        // Mettre à jour les informations utilisateur sur la vue d'accueil
+        mMainView.updateUserInfo(connectedUser);
     }
 
     /**
      * Méthode appelée lorsqu'un utilisateur se déconnecte
      */
     public void onUserLogout() {
+        System.out.println("Méthode onUserLogout() appelée dans MessageAppIHM");
+
+        // Vérifier que l'utilisateur est réellement déconnecté dans la session
+        if (mMessageApp.getSession().getConnectedUser() != null) {
+            System.err.println("ALERTE: Session incohérente - l'utilisateur est toujours connecté!");
+        } else {
+            System.out.println("Session vérifiée: utilisateur correctement déconnecté");
+        }
+
         // Retour à la vue de login
         mCardLayout.show(mMainPanel, LOGIN_VIEW);
 
         // Réinitialisation du titre
         mFrame.setTitle("MessageApp");
 
-        // Message dans le log
-        mMainView.appendToEventLog("Déconnexion de l'utilisateur");
+        // Mise à jour de la vue principale (utilisateur déconnecté)
+        mMainView.updateUserInfo(null);
+
+        // Validation explicite de l'état de déconnexion dans la vue de login
+        if (mMessageApp.getLoginView() instanceof LoginView) {
+            ((LoginView) mMessageApp.getLoginView()).validateLogoutState();
+        }
+
+        System.out.println("Interface mise à jour pour refléter la déconnexion");
     }
+
 }

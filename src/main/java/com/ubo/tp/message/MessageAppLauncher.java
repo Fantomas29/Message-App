@@ -8,6 +8,8 @@ import main.java.com.ubo.tp.message.core.database.IDatabase;
 import main.java.com.ubo.tp.message.ihm.MessageApp;
 import main.mock.MessageAppMock;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.Properties;
 
 /**
@@ -28,28 +30,47 @@ public class MessageAppLauncher {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// Chargement des propriétés
-		Properties properties = PropertiesManager.loadProperties(Constants.CONFIGURATION_FILE);
 
-		// Vérification du mode bouchoné
-		String mockEnabledValue = properties.getProperty(Constants.CONFIGURATION_KEY_MOCK_ENABLED, "false");
-		IS_MOCK_ENABLED = Boolean.parseBoolean(mockEnabledValue);
+		// Intercepter les exceptions non gérées spécifiques aux polices TrueType
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				// Si c'est l'exception spécifique de TrueTypeFont, l'ignorer silencieusement
+				if (e instanceof NullPointerException &&
+						e.getStackTrace().length > 0 &&
+						e.getStackTrace()[0].toString().contains("TrueTypeFont.open")) {
+					// Ne rien faire - ignorer cette exception spécifique
+					return;
+				}
 
-		// Création de la base de données
-		IDatabase database = new Database();
+				// Pour toutes les autres exceptions, comportement normal d'affichage
+				System.err.println("Exception non gérée dans le thread " + t.getName() + ": " + e.getMessage());
+				e.printStackTrace();
+			}
+		});
+			// Chargement des propriétés
+			Properties properties = PropertiesManager.loadProperties(Constants.CONFIGURATION_FILE);
 
-		// Création du gestionnaire d'entités
-		EntityManager entityManager = new EntityManager(database);
+			// Vérification du mode bouchoné
+			String mockEnabledValue = properties.getProperty(Constants.CONFIGURATION_KEY_MOCK_ENABLED, "false");
+			IS_MOCK_ENABLED = Boolean.parseBoolean(mockEnabledValue);
 
-		// Activation du mode bouchoné si nécessaire
-		if (IS_MOCK_ENABLED) {
-			MessageAppMock mock = new MessageAppMock(database, entityManager);
-			mock.showGUI();
-		}
+			// Création de la base de données
+			IDatabase database = new Database();
 
-		// Création et initialisation de l'application
-		MessageApp messageApp = new MessageApp(database, entityManager);
-		messageApp.init();
-		messageApp.show();
+			// Création du gestionnaire d'entités
+			EntityManager entityManager = new EntityManager(database);
+
+			// Activation du mode bouchoné si nécessaire
+			if (IS_MOCK_ENABLED) {
+				MessageAppMock mock = new MessageAppMock(database, entityManager);
+				mock.showGUI();
+			}
+
+			// Création et initialisation de l'application
+			MessageApp messageApp = new MessageApp(database, entityManager);
+			messageApp.init();
+			messageApp.show();
+
 	}
 }

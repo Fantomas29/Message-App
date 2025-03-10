@@ -48,10 +48,21 @@ public class Session implements ISession {
 
 	@Override
 	public void disconnect() {
+		System.out.println("Méthode disconnect() appelée dans Session");
+		if (this.mConnectedUser != null) {
+			System.out.println("Déconnexion de l'utilisateur: @" + this.mConnectedUser.getUserTag());
+		} else {
+			System.out.println("Aucun utilisateur connecté à déconnecter");
+		}
+
 		this.mConnectedUser = null;
+		System.out.println("mConnectedUser mis à null");
 
 		for (ISessionObserver observer : mObservers) {
+			System.out.println("Notification de l'observateur: " + observer.getClass().getSimpleName());
 			observer.notifyLogout();
 		}
+
+		System.out.println("Tous les observateurs ont été notifiés");
 	}
 }

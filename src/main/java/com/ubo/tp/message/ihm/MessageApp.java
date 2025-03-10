@@ -32,6 +32,8 @@ import main.java.com.ubo.tp.message.ihm.component.userlist.IUserListController;
 import main.java.com.ubo.tp.message.ihm.component.userlist.IUserListView;
 import main.java.com.ubo.tp.message.ihm.component.userlist.UserListController;
 import main.java.com.ubo.tp.message.ihm.component.userlist.UserListView;
+import main.java.com.ubo.tp.message.core.database.MessageNotificationObserver;
+
 
 /**
  * Classe principale technique de l'application.
@@ -163,18 +165,15 @@ public class MessageApp {
 		EventManager eventManager = EventManager.getInstance();
 
 		// Écoute des événements de session
-		eventManager.addListener(SessionEvents.UserLoggedInEvent.class, new IEventListener<SessionEvents.UserLoggedInEvent>() {
-			@Override
-			public void onEvent(SessionEvents.UserLoggedInEvent event) {
-				// Affichage de la vue principale
-				mIHM.showMainView();
-				// Log de l'événement de connexion
-				User connectedUser = event.getUser();
-				if (connectedUser != null) {
-					System.out.println("Utilisateur connecté : @" + connectedUser.getUserTag());
-				}
-			}
-		});
+		eventManager.addListener(SessionEvents.UserLoggedInEvent.class, event -> {
+            // Affichage de la vue principale
+            mIHM.showMainView();
+            // Log de l'événement de connexion
+            User connectedUser = event.getUser();
+            if (connectedUser != null) {
+                System.out.println("Utilisateur connecté : @" + connectedUser.getUserTag());
+            }
+        });
 
 		eventManager.addListener(SessionEvents.UserLoggedOutEvent.class, new IEventListener<SessionEvents.UserLoggedOutEvent>() {
 			@Override
@@ -235,8 +234,14 @@ public class MessageApp {
 		// Chargement de la configuration si elle existe
 		this.loadConfiguration();
 
+		// Création et ajout de l'observateur de notifications de messages
+		MessageNotificationObserver notificationObserver = new MessageNotificationObserver(this.mSession);
+		this.mDatabase.addObserver(notificationObserver);
+
 		// Initialisation de l'IHM
 		this.mIHM.init();
+
+		MessageNotificationManager.getInstance();
 	}
 
 	/**

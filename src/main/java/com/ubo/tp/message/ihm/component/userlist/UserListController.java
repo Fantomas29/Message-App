@@ -52,7 +52,6 @@ public class UserListController implements IUserListController {
     public void initUserList() {
         // Récupération de tous les utilisateurs
         Set<User> allUsers = mDatabase.getUsers();
-        System.out.println("Nombre d'utilisateurs dans la base de données : " + allUsers.size());
 
         // Mise à jour de la vue
         mView.updateUserList(allUsers);
@@ -106,9 +105,6 @@ public class UserListController implements IUserListController {
 
         // Notification
         mView.showInfo("Succès", "Vous êtes maintenant abonné à @" + userToFollow.getUserTag());
-
-        // Log pour débogage
-        System.out.println("Abonnement à l'utilisateur @" + userToFollow.getUserTag() + " effectué");
     }
 
     @Override
@@ -176,5 +172,14 @@ public class UserListController implements IUserListController {
         if (connectedUser != null) {
             mView.updateFollowStatus(connectedUser);
         }
+    }
+
+    /**
+     * Permet d'accéder à la base de données depuis la vue (pour les statistiques)
+     *
+     * @return la base de données
+     */
+    public IDatabase getDatabase() {
+        return mDatabase;
     }
 }
