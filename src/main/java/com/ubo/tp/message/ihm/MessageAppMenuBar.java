@@ -108,7 +108,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Quitter"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/exit.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/exit.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon exitIcon = new ImageIcon(img);
@@ -139,7 +139,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Profil"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/user.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/user.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon profileIcon = new ImageIcon(img);
@@ -163,7 +163,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Liste des utilisateurs"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/user_list.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/user_list.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon userListIcon = new ImageIcon(img);
@@ -187,7 +187,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Messages"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/message.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/message.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon messageIcon = new ImageIcon(img);
@@ -211,7 +211,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "Déconnexion"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/logout.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/logout.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon logoutIcon = new ImageIcon(img);
@@ -226,6 +226,9 @@ public class MessageAppMenuBar extends JMenuBar {
             public void actionPerformed(ActionEvent e) {
                 // Déconnexion de l'utilisateur
                 mMessageApp.getSession().disconnect();
+
+                // Émettre un événement explicite pour afficher la vue de login
+                EventManager.getInstance().fireEvent(new NavigationEvents.ShowLoginViewEvent());
             }
         });
 
@@ -246,7 +249,7 @@ public class MessageAppMenuBar extends JMenuBar {
 
         // Ajout d'une icône à l'item "À propos"
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/about.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/about.png"));
             // Redimensionner l'icône à une taille raisonnable (16x16 pixels)
             java.awt.Image img = originalIcon.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
             ImageIcon aboutIcon = new ImageIcon(img);
@@ -285,7 +288,7 @@ public class MessageAppMenuBar extends JMenuBar {
         // Ajout du logo UBO
         JLabel logoLabel = new JLabel();
         try {
-            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/main/resources/images/logo_ubo.png"));
+            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/images/logo_ubo.png"));
             // Pour le logo dans la boîte de dialogue, une taille modérée est appropriée (100x100 pixels max)
             int originalWidth = originalIcon.getIconWidth();
             int originalHeight = originalIcon.getIconHeight();

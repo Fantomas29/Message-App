@@ -80,7 +80,6 @@ public class MessageController implements IMessageController {
         mEntityManager.writeMessageFile(newMessage);
 
         // Notification à la vue
-        mView.showInfo("Succès", "Message envoyé avec succès");
         mView.resetMessageField();
 
         // Mise à jour de la liste des messages
@@ -91,16 +90,46 @@ public class MessageController implements IMessageController {
 
     @Override
     public void refreshMessages() {
-        // Récupération de tous les messages
+        // Récupération de l'utilisateur connecté
+        User connectedUser = mSession.getConnectedUser();
+        if (connectedUser == null) {
+            mView.updateMessageList(new HashSet<>()); // Liste vide si personne n'est connecté
+            return;
+        }
+
+        Set<Message> filteredMessages = new HashSet<>();
         Set<Message> allMessages = mDatabase.getMessages();
 
+        // Parcourir tous les messages
+        for (Message message : allMessages) {
+            User sender = message.getSender();
+
+            // Inclure les messages de l'utilisateur connecté
+            if (sender.equals(connectedUser)) {
+                filteredMessages.add(message);
+                continue;
+            }
+
+            // Inclure les messages des utilisateurs suivis
+            if (connectedUser.isFollowing(sender)) {
+                filteredMessages.add(message);
+            }
+        }
+
         // Mise à jour de la vue
-        mView.updateMessageList(allMessages);
+        mView.updateMessageList(filteredMessages);
     }
 
     @Override
     public void searchMessages(String searchText) {
-        // Si la recherche est vide, afficher tous les messages
+        // Vérification qu'un utilisateur est connecté
+        User connectedUser = mSession.getConnectedUser();
+        if (connectedUser == null) {
+            mView.updateMessageList(new HashSet<>()); // Liste vide si personne n'est connecté
+            return;
+        }
+
+        // Si la recherche est vide, revenir à l'affichage filtré normal
         if (searchText == null || searchText.trim().isEmpty()) {
             refreshMessages();
             return;
@@ -108,18 +137,30 @@ public class MessageController implements IMessageController {
 
         Set<Message> filteredMessages = new HashSet<>();
         Set<Message> allMessages = mDatabase.getMessages();
+        Set<Message> relevantMessages = new HashSet<>();
+
+        // Filtrer d'abord pour n'inclure que les messages pertinents pour l'utilisateur
+        for (Message message : allMessages) {
+            User sender = message.getSender();
+
+            // Inclure seulement les messages de l'utilisateur connecté et des utilisateurs suivis
+            if (sender.equals(connectedUser) || connectedUser.isFollowing(sender)) {
+                relevantMessages.add(message);
+            }
+        }
 
         // Si aucun symbole spécial n'est présent, rechercher selon les deux critères (union)
         if (!searchText.contains("@") && !searchText.contains("#")) {
             // Recherche par texte général - union des critères
             String searchLower = searchText.toLowerCase();
 
-            // Parcourir tous les messages pour rechercher manuellement
-            for (Message message : allMessages) {
+            // Parcourir tous les messages pertinents pour rechercher manuellement
+            for (Message message : relevantMessages) {
                 // Vérifier si le texte du message contient la recherche
                 String messageText = message.getText().toLowerCase();
                 if (messageText.contains(searchLower)) {
                     filteredMessages.add(message);
+                    continue;
                 }
 
                 // Vérifier également dans les tags et les userTags
@@ -153,15 +194,17 @@ public class MessageController implements IMessageController {
                     userTag = userTag.split("\\s+")[0];
                 }
 
-                // Récupérer les messages qui citent cet utilisateur
-                Set<Message> taggedMessages = mDatabase.getMessagesWithUserTag(userTag);
-                filteredMessages.addAll(taggedMessages);
+                // Parcourir les messages pertinents et filtrer
+                for (Message message : relevantMessages) {
+                    // Si le message cite cet utilisateur
+                    if (message.containsUserTag(userTag)) {
+                        filteredMessages.add(message);
+                        continue;
+                    }
 
-                // Également récupérer les messages émis par cet utilisateur (s'il existe)
-                for (User user : mDatabase.getUsers()) {
-                    if (user.getUserTag().equalsIgnoreCase(userTag)) {
-                        filteredMessages.addAll(mDatabase.getUserMessages(user));
-                        break;
+                    // Si le message a été émis par cet utilisateur
+                    if (message.getSender().getUserTag().equalsIgnoreCase(userTag)) {
+                        filteredMessages.add(message);
                     }
                 }
             }
@@ -174,8 +217,12 @@ public class MessageController implements IMessageController {
                     tag = tag.split("\\s+")[0];
                 }
 
-                // Ajouter les messages avec ce tag
-                filteredMessages.addAll(mDatabase.getMessagesWithTag(tag));
+                // Parcourir les messages pertinents et filtrer par tag
+                for (Message message : relevantMessages) {
+                    if (message.containsTag(tag)) {
+                        filteredMessages.add(message);
+                    }
+                }
             }
         }
 

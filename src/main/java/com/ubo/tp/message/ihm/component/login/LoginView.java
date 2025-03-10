@@ -24,6 +24,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
+import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 import main.java.com.ubo.tp.message.ihm.component.IComponent;
@@ -372,11 +373,38 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
 
     @Override
     public void init() {
-        // Rien à faire pour l'initialisation
+        validateLogoutState();
     }
 
     @Override
     public JComponent getView() {
         return getComponent();
+    }
+
+    /**
+     * Vérifie que l'utilisateur est bien déconnecté lorsque la vue de login est affichée
+     */
+    public void validateLogoutState() {
+        // Cette méthode doit être appelée quand la vue de login devient visible
+        // Nous allons l'appeler explicitement après une déconnexion
+
+        // Nous avons besoin d'accéder à la session - supposons que nous pouvons l'obtenir via le contrôleur
+        if (mController instanceof LoginController) {
+            LoginController loginController = (LoginController) mController;
+            ISession session = loginController.mSession;
+
+            if (session != null && session.getConnectedUser() != null) {
+                // L'utilisateur n'est pas correctement déconnecté!
+                System.err.println("ERREUR: Un utilisateur est toujours connecté alors que la vue de login est affichée!");
+                System.err.println("Utilisateur connecté: @" + session.getConnectedUser().getUserTag());
+
+                // On pourrait même afficher un message d'erreur
+                showError("Erreur de session",
+                        "Un problème est survenu lors de la déconnexion. " +
+                                "Veuillez redémarrer l'application si vous rencontrez des problèmes.");
+            } else {
+                System.out.println("Validation de la déconnexion: OK - Aucun utilisateur connecté");
+            }
+        }
     }
 }
