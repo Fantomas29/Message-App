@@ -1,0 +1,6 @@
+#
+#Tue Mar 11 10:46:05 CET 2025
+Date=1741686365151
+Sender=52ca562b-7f53-4d90-b36c-706bc372f318
+Text=Ouais \u00E7a va
+UUID=50a90e1b-ed46-435e-9d7e-5d5c29479863

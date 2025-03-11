@@ -9,13 +9,14 @@ import main.java.com.ubo.tp.message.core.EntityManager;
 import main.java.com.ubo.tp.message.core.database.IDatabase;
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
+import main.java.com.ubo.tp.message.core.event.SessionEvents;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.User;
 
 /**
  * Contrôleur pour la gestion du profil utilisateur.
  */
-public class ProfileController implements IProfileController {
+public class ProfileController implements IProfileController, IProfileViewActionListener {
 
     /**
      * Référence vers la base de données
@@ -109,6 +110,9 @@ public class ProfileController implements IProfileController {
         // Écriture du fichier utilisateur
         mEntityManager.writeUserFile(connectedUser);
 
+        // Émission d'un événement pour indiquer la mise à jour du profil
+        EventManager.getInstance().fireEvent(new SessionEvents.UserProfileUpdatedEvent(connectedUser));
+
         // Affichage d'un message de confirmation
         mView.showInfo("Succès", "Profil mis à jour avec succès");
 
@@ -150,5 +154,21 @@ public class ProfileController implements IProfileController {
     public void returnToMainView() {
         // Émission d'un événement pour demander l'affichage de la vue principale
         EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
+    }
+
+    // Implémentation des méthodes de callback
+    @Override
+    public boolean onUpdateProfileRequested(String updatedName, String currentPassword, String newPassword, String avatarPath) {
+        return this.updateProfile(updatedName, currentPassword, newPassword, avatarPath);
+    }
+
+    @Override
+    public String onAvatarSelectionRequested() {
+        return this.selectAvatar();
+    }
+
+    @Override
+    public void onReturnToMainViewRequested() {
+        this.returnToMainView();
     }
 }

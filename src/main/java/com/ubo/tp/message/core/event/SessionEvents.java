@@ -28,4 +28,19 @@ public class SessionEvents {
     public static class UserLoggedOutEvent implements IEvent {
         // Pas de données supplémentaires nécessaires
     }
+
+    /**
+     * Événement émis lorsqu'un profil utilisateur est mis à jour
+     */
+    public static class UserProfileUpdatedEvent implements IEvent {
+        private final User user;
+
+        public UserProfileUpdatedEvent(User user) {
+            this.user = user;
+        }
+
+        public User getUser() {
+            return user;
+        }
+    }
 }

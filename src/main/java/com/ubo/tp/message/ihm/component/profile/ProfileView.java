@@ -19,6 +19,7 @@ import javax.swing.border.TitledBorder;
 
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
+import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
 /**
  * Panel de consultation et de modification du profil utilisateur
@@ -30,7 +31,7 @@ public class ProfileView extends AbstractComponent implements IProfileView {
     /**
      * Référence au controller de profil
      */
-    public IProfileController mController;
+    private IProfileViewActionListener mActionListener;
 
     /**
      * Utilisateur actuellement connecté
@@ -60,11 +61,8 @@ public class ProfileView extends AbstractComponent implements IProfileView {
 
     /**
      * Constructeur.
-     *
-     * @param controller Référence vers le controller
      */
-    public ProfileView(IProfileController controller) {
-        this.mController = controller;
+    public ProfileView() {
         this.mNewAvatarPath = "";
 
         // Initialisation des composants graphiques
@@ -113,10 +111,12 @@ public class ProfileView extends AbstractComponent implements IProfileView {
         mAvatarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String avatarPath = mController.selectAvatar();
-                if (avatarPath != null) {
-                    mNewAvatarPath = avatarPath;
-                    displayAvatar(mNewAvatarPath);
+                if (mActionListener != null) {
+                    String avatarPath = mActionListener.onAvatarSelectionRequested();
+                    if (avatarPath != null) {
+                        mNewAvatarPath = avatarPath;
+                        AvatarUtils.displayAvatar(mAvatarLabel, mConnectedUser.getAvatarPath(), 150, "?");
+                    }
                 }
             }
         });
@@ -218,12 +218,7 @@ public class ProfileView extends AbstractComponent implements IProfileView {
         // Bouton Enregistrer
         mSaveButton = new JButton("Enregistrer");
         mSaveButton.setPreferredSize(new Dimension(120, 30));
-        mSaveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveProfile();
-            }
-        });
+        mSaveButton.addActionListener(e -> saveProfile());
 
         // Bouton Quitter
         JButton mQuitButton = new JButton("Page d'accueil");
@@ -231,10 +226,9 @@ public class ProfileView extends AbstractComponent implements IProfileView {
         mQuitButton.setBackground(new Color(230, 230, 250));
         mQuitButton.setForeground(new Color(50, 50, 100));
         mQuitButton.setFont(new Font("Arial", Font.BOLD, 12));
-        mQuitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                mController.returnToMainView();
+        mQuitButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                mActionListener.onReturnToMainViewRequested();
             }
         });
 
@@ -252,39 +246,6 @@ public class ProfileView extends AbstractComponent implements IProfileView {
     }
 
     /**
-     * Affiche l'avatar de l'utilisateur
-     *
-     * @param avatarPath Chemin vers l'avatar
-     */
-    protected void displayAvatar(String avatarPath) {
-        if (avatarPath != null && !avatarPath.isEmpty()) {
-            try {
-                // Chargement de l'image
-                ImageIcon originalIcon = new ImageIcon(avatarPath);
-
-                // Redimensionnement de l'image pour qu'elle tienne dans le label
-                Image img = originalIcon.getImage();
-                Image resizedImg = img.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-
-                // Création d'une nouvelle icône avec l'image redimensionnée
-                ImageIcon resizedIcon = new ImageIcon(resizedImg);
-
-                // Affichage de l'icône dans le label
-                mAvatarLabel.setIcon(resizedIcon);
-                mAvatarLabel.setText("");
-            } catch (Exception e) {
-                // En cas d'erreur, afficher un texte
-                mAvatarLabel.setIcon(null);
-                mAvatarLabel.setText("Aucun avatar");
-            }
-        } else {
-            // Pas d'avatar défini
-            mAvatarLabel.setIcon(null);
-            mAvatarLabel.setText("Aucun avatar");
-        }
-    }
-
-    /**
      * Enregistre les modifications du profil
      */
     protected void saveProfile() {
@@ -293,12 +254,14 @@ public class ProfileView extends AbstractComponent implements IProfileView {
         String currentPassword = new String(mCurrentPasswordField.getPassword());
         String newPassword = new String(mNewPasswordField.getPassword());
 
-        // Demande au contrôleur de mettre à jour le profil
-        boolean success = mController.updateProfile(name, currentPassword, newPassword, mNewAvatarPath);
+        if (mActionListener != null) {
+            // Demande au contrôleur de mettre à jour le profil
+            boolean success = mActionListener.onUpdateProfileRequested(name, currentPassword, newPassword, mNewAvatarPath);
 
-        if (success) {
-            // Réinitialisation des champs
-            resetFields();
+            if (success) {
+                // Réinitialisation des champs
+                resetFields();
+            }
         }
     }
 
@@ -319,7 +282,7 @@ public class ProfileView extends AbstractComponent implements IProfileView {
             mNewPasswordField.setText("");
 
             // Affichage de l'avatar
-            displayAvatar(mNewAvatarPath);
+            AvatarUtils.displayAvatar(mAvatarLabel, mConnectedUser.getAvatarPath(), 150, "?");
         }
     }
 
@@ -332,37 +295,11 @@ public class ProfileView extends AbstractComponent implements IProfileView {
     }
 
     @Override
-    public void showError(String title, String message) {
-        JOptionPane.showMessageDialog(
-                mMainPanel,
-                message,
-                title,
-                JOptionPane.ERROR_MESSAGE
-        );
-    }
-
-    @Override
-    public void showInfo(String title, String message) {
-        JOptionPane.showMessageDialog(
-                mMainPanel,
-                message,
-                title,
-                JOptionPane.INFORMATION_MESSAGE
-        );
-    }
-
-    @Override
     public JComponent getComponent() {
         return mMainPanel;
     }
 
-    @Override
-    public void init() {
-        // Pas d'initialisation supplémentaire nécessaire
-    }
-
-    @Override
-    public JComponent getView() {
-        return getComponent();
+    public void setActionListener(IProfileViewActionListener listener) {
+        this.mActionListener = listener;
     }
 }
