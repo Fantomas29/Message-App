@@ -100,13 +100,13 @@ public class MessageAppIHM {
         EventManager eventManager = EventManager.getInstance();
 
         // Écouter l'événement de navigation pour la liste des utilisateurs
-        eventManager.addListener(NavigationEvents.ShowUserListViewEvent.class, event -> showUserListView(mMessageApp.getUserListView().getComponent()));
+        eventManager.addListener(NavigationEvents.ShowUserListViewEvent.class, event -> showUserListView());
 
         // Écouter l'événement de navigation pour le profil
-        eventManager.addListener(NavigationEvents.ShowProfileViewEvent.class, event -> showProfileView(mMessageApp.getProfileView().getComponent()));
+        eventManager.addListener(NavigationEvents.ShowProfileViewEvent.class, event -> showProfileView());
 
         // Écouter l'événement de navigation pour les messages
-        eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, event -> showMessageView(mMessageApp.getMessageView().getComponent()));
+        eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, event -> showMessageView());
 
         // Écouter l'événement pour l'affichage de la vue principale
         eventManager.addListener(NavigationEvents.ShowMainViewEvent.class, event -> showMainView());
@@ -301,31 +301,26 @@ public class MessageAppIHM {
 
     /**
      * Méthode pour afficher la vue de profil
-     *
-     * @param profileView La vue de profil à afficher
      */
-    public void showProfileView(JComponent profileView) {
+    public void showProfileView() {
+        JComponent profileView = mMessageApp.getProfileView().getComponent();
         showView(profileView, PROFILE_VIEW);
     }
 
     /**
      * Méthode pour afficher la vue de liste des utilisateurs
-     *
-     * @param userListView La vue de liste des utilisateurs à afficher
      */
-    public void showUserListView(JComponent userListView) {
+    public void showUserListView() {
+        JComponent userListView = mMessageApp.getUserListView().getComponent();
         showView(userListView, USER_LIST_VIEW);
     }
 
     /**
      * Méthode pour afficher la vue des messages
-     *
-     * @param messageView La vue des messages à afficher
      */
-    public void showMessageView(JComponent messageView) {
-        // Marquer les messages comme lus avant d'afficher la vue
+    public void showMessageView() {
+        JComponent messageView = mMessageApp.getMessageView().getComponent();
         NotificationManager.getInstance().markAllAsRead();
-
         showView(messageView, MESSAGE_VIEW);
     }
 

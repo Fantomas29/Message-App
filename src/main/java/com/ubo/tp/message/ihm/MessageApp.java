@@ -8,6 +8,7 @@ import main.java.com.ubo.tp.message.core.directory.IWatchableDirectory;
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
+import main.java.com.ubo.tp.message.core.navigation.NavigationService;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.core.session.Session;
 import main.java.com.ubo.tp.message.datamodel.User;
@@ -39,6 +40,11 @@ public class MessageApp {
 	 *
 	 */
 	protected HomeController mHomeController;
+
+	/**
+	 * Service de navigation
+	 */
+	protected NavigationService mNavigationService;
 
 	/**
 	 * Gestionnaire des entités contenu de la base de données.
@@ -154,6 +160,13 @@ public class MessageApp {
 		((MessageView) mMessageView).setSession(mSession);
 		this.mMessageController = new MessageController(mDatabase, mEntityManager, mSession, mMessageView);
 		((MessageView) mMessageView).setActionListener((IMessageViewActionListener) mMessageController);
+
+		// Initialisation du service de navigation
+		this.mNavigationService = new NavigationService(
+				this.mIHM,
+				this.mMessageController,
+				this.mUserListController
+		);
 	}
 
 	/**
@@ -164,47 +177,24 @@ public class MessageApp {
 
 		eventManager.addListener(SessionEvents.UserLoggedInEvent.class,
 				event -> {
-					mIHM.showMainView();
+					// Seulement des actions de logging ou de mise à jour d'état
 					User connectedUser = event.getUser();
 					if (connectedUser != null) {
 						System.out.println("Utilisateur connecté : @" + connectedUser.getUserTag());
 					}
+
+					// Déclencher un événement de navigation
+					EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
 				}
 		);
 
 		eventManager.addListener(SessionEvents.UserLoggedOutEvent.class,
 				event -> {
-					mIHM.showLoginView();
+					// Seulement des actions de logging ou de mise à jour d'état
 					System.out.println("Utilisateur déconnecté");
-				}
-		);
 
-		eventManager.addListener(NavigationEvents.ShowLoginViewEvent.class,
-				event -> mIHM.showLoginView()
-		);
-
-		eventManager.addListener(NavigationEvents.ShowMainViewEvent.class,
-				event -> mIHM.showMainView()
-		);
-
-		eventManager.addListener(NavigationEvents.ShowProfileViewEvent.class,
-				event -> {
-					((ProfileView) mProfileView).updateUserInfo(mSession.getConnectedUser());
-					mIHM.showProfileView(mProfileView.getComponent());
-				}
-		);
-
-		eventManager.addListener(NavigationEvents.ShowUserListViewEvent.class,
-				event -> {
-					mUserListController.refreshUserList();
-					mIHM.showUserListView(mUserListView.getComponent());
-				}
-		);
-
-		eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class,
-				event -> {
-					mMessageController.refreshMessages();
-					mIHM.showMessageView(mMessageView.getComponent());
+					// Déclencher un événement de navigation
+					EventManager.getInstance().fireEvent(new NavigationEvents.ShowLoginViewEvent());
 				}
 		);
 	}
@@ -221,7 +211,7 @@ public class MessageApp {
 		this.mDatabase.addObserver(notificationObserver);
 
 		// Initialisation du contrôleur de la vue d'accueil
-		this.mHomeController = new HomeController(this, this.mSession);
+		this.mHomeController = new HomeController(this.mSession);
 
 		// Initialisation de l'IHM
 		this.mIHM.init();
@@ -414,44 +404,6 @@ public class MessageApp {
 	 */
 	public enum NavigationType {
 		PROFILE, USER_LIST, MESSAGES, MAIN, LOGIN
-	}
-
-
-	/**
-	 * Navigue vers la vue correspondant au type de navigation donné.
-	 *
-	 * @param navigationType Type de navigation
-	 */
-	public void navigateTo(NavigationType navigationType) {
-		// Vérifier qu'un utilisateur est connecté
-		if (mSession.getConnectedUser() == null) {
-			return;
-		}
-
-		// Préparer les données nécessaires selon le type de navigation
-		switch (navigationType) {
-			case PROFILE:
-				EventManager.getInstance().fireEvent(new NavigationEvents.ShowProfileViewEvent());
-				break;
-
-			case USER_LIST:
-				mUserListController.refreshUserList();
-				EventManager.getInstance().fireEvent(new NavigationEvents.ShowUserListViewEvent());
-				break;
-
-			case MESSAGES:
-				mMessageController.refreshMessages();
-				EventManager.getInstance().fireEvent(new NavigationEvents.ShowMessageViewEvent());
-				break;
-
-			case MAIN:
-				EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
-				break;
-
-			case LOGIN:
-				EventManager.getInstance().fireEvent(new NavigationEvents.ShowLoginViewEvent());
-				break;
-		}
 	}
 
 	public HomeController getHomeController() {

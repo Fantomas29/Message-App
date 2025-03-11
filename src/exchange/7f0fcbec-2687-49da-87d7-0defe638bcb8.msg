@@ -1,0 +1,6 @@
+#
+#Tue Mar 11 11:30:54 CET 2025
+Date=1741689054367
+Sender=09f24760-8488-4515-b091-2fad762224e5
+Text=lol non
+UUID=7f0fcbec-2687-49da-87d7-0defe638bcb8

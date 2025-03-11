@@ -7,7 +7,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -69,9 +68,9 @@ public class UserListView extends AbstractComponent implements IUserListView {
      */
     protected List<User> mDisplayedUsers;
     /**
-     * Map pour stocker les boutons par utilisateur
+     * Map pour stocker les boutons de suivi par utilisateur
      */
-    protected Map<UUID, JButton[]> mUserButtons;
+    protected Map<UUID, UserFollowButtons> mUserButtons;
     /**
      * Contrôleur de la vue
      */
@@ -130,7 +129,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
         JScrollPane scrollPane = new JScrollPane(mUsersPanel);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // Désactiver barre horizontale
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         // Panel de recherche
         JPanel searchPanel = createSearchPanel();
@@ -304,10 +303,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
         userPanel.add(unfollowButton, gbc);
 
         // Stocker les boutons pour cet utilisateur
-        JButton[] buttons = new JButton[2];
-        buttons[0] = followButton;
-        buttons[1] = unfollowButton;
-        mUserButtons.put(user.getUuid(), buttons);
+        mUserButtons.put(user.getUuid(), new UserFollowButtons(followButton, unfollowButton));
 
         return userPanel;
     }
@@ -359,12 +355,9 @@ public class UserListView extends AbstractComponent implements IUserListView {
         mUsersPanel.repaint();
 
         // Force à redessiner tout après un petit délai
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                mMainPanel.revalidate();
-                mMainPanel.repaint();
-            }
+        SwingUtilities.invokeLater(() -> {
+            mMainPanel.revalidate();
+            mMainPanel.repaint();
         });
     }
 
@@ -377,38 +370,23 @@ public class UserListView extends AbstractComponent implements IUserListView {
 
         // Pour chaque utilisateur affiché
         for (User user : mDisplayedUsers) {
-            // Récupérer les boutons associés à cet utilisateur
-            JButton[] buttons = mUserButtons.get(user.getUuid());
+            UserFollowButtons actionButtons = mUserButtons.get(user.getUuid());
 
-            if (buttons != null) {
-                JButton followButton = buttons[0];
-                JButton unfollowButton = buttons[1];
-
-                // Ne pas afficher les boutons pour l'utilisateur connecté lui-même
-                if (user.getUuid().equals(connectedUser.getUuid())) {
-                    followButton.setVisible(false);
-                    unfollowButton.setVisible(false);
-                    continue;
-                }
-
+            if (actionButtons != null) {
                 // Vérifier si l'utilisateur connecté suit l'utilisateur courant
                 boolean isFollowing = connectedUser.isFollowing(user);
+                boolean isCurrentUser = user.getUuid().equals(connectedUser.getUuid());
 
-                // Configuration des boutons en fonction du statut d'abonnement
-                followButton.setVisible(!isFollowing);
-                unfollowButton.setVisible(isFollowing);
+                actionButtons.updateVisibility(isFollowing, isCurrentUser);
             } else {
                 System.out.println("Pas de boutons trouvés pour l'utilisateur @" + user.getUserTag());
             }
         }
 
         // Forcer la mise à jour de l'affichage
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                mUsersPanel.revalidate();
-                mUsersPanel.repaint();
-            }
+        SwingUtilities.invokeLater(() -> {
+            mUsersPanel.revalidate();
+            mUsersPanel.repaint();
         });
     }
 
@@ -424,5 +402,36 @@ public class UserListView extends AbstractComponent implements IUserListView {
 
     public void setActionListener(IUserListViewActionListener listener) {
         this.mActionListener = listener;
+    }
+
+    /**
+     * Classe interne pour gérer les boutons de suivi/non-suivi d'un utilisateur
+     */
+    private static class UserFollowButtons {
+        private final JButton followButton;
+        private final JButton unfollowButton;
+
+        public UserFollowButtons(JButton followButton, JButton unfollowButton) {
+            this.followButton = followButton;
+            this.unfollowButton = unfollowButton;
+        }
+
+        /**
+         * Mise à jour de la visibilité des boutons
+         *
+         * @param isFollowing   Indique si l'utilisateur est suivi
+         * @param isCurrentUser Indique si c'est l'utilisateur courant
+         */
+        public void updateVisibility(boolean isFollowing, boolean isCurrentUser) {
+            if (isCurrentUser) {
+                // Masquer les boutons pour l'utilisateur courant
+                followButton.setVisible(false);
+                unfollowButton.setVisible(false);
+            } else {
+                // Configurer la visibilité en fonction du statut de suivi
+                followButton.setVisible(!isFollowing);
+                unfollowButton.setVisible(isFollowing);
+            }
+        }
     }
 }

@@ -12,7 +12,6 @@ import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTabbedPane;
@@ -209,12 +208,7 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
 
         mSignupButton = new JButton("S'inscrire");
         mSignupButton.setPreferredSize(new Dimension(150, 40));
-        mSignupButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                signup();
-            }
-        });
+        mSignupButton.addActionListener(e -> signup());
 
         // Ajout des composants au panel avec GridBagConstraints
         GridBagConstraints gbc = new GridBagConstraints();

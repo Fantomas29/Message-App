@@ -406,29 +406,20 @@ public class HomeView extends JPanel implements IView {
      */
     protected void updateUnreadBadge(final int count) {
         // Exécuter dans le thread EDT pour garantir la sécurité des composants Swing
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                if (count > 0) {
-                    mUnreadBadgeLabel.setText(String.valueOf(count));
-                    mUnreadBadgeLabel.setVisible(true);
-                } else {
-                    mUnreadBadgeLabel.setVisible(false);
-                }
+        SwingUtilities.invokeLater(() -> {
+            if (count > 0) {
+                mUnreadBadgeLabel.setText(String.valueOf(count));
+                mUnreadBadgeLabel.setVisible(true);
+            } else {
+                mUnreadBadgeLabel.setVisible(false);
+            }
 
-                // Forcer le rafraîchissement de l'interface
-                if (mMessagesCard != null) {
-                    mMessagesCard.revalidate();
-                    mMessagesCard.repaint();
-                }
+            // Forcer le rafraîchissement de l'interface
+            if (mMessagesCard != null) {
+                mMessagesCard.revalidate();
+                mMessagesCard.repaint();
             }
         });
-    }
-
-    static class OverlayLayout extends javax.swing.OverlayLayout {
-        public OverlayLayout(Container target) {
-            super(target);
-        }
     }
 
 }
