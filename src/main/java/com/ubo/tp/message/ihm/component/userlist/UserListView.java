@@ -2,7 +2,6 @@ package main.java.com.ubo.tp.message.ihm.component.userlist;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -14,7 +13,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,23 +23,21 @@ import java.util.UUID;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
+import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
 /**
  * Vue de la liste des utilisateurs enregistrés
@@ -56,10 +52,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
      * Hauteur de l'avatar
      */
     protected static final int AVATAR_SIZE = 60;
-    /**
-     * Référence au contrôleur
-     */
-    public IUserListController mController;
     /**
      * Panel principal
      */
@@ -80,26 +72,20 @@ public class UserListView extends AbstractComponent implements IUserListView {
      * Map pour stocker les boutons par utilisateur
      */
     protected Map<UUID, JButton[]> mUserButtons;
+    /**
+     * Contrôleur de la vue
+     */
+    private IUserListViewActionListener mActionListener;
 
     /**
      * Constructeur.
-     *
-     * @param controller Contrôleur de la vue
      */
-    public UserListView(IUserListController controller) {
-        this.mController = controller;
+    public UserListView() {
         this.mDisplayedUsers = new ArrayList<>();
         this.mUserButtons = new HashMap<>();
 
         // Initialisation des composants graphiques
         this.initComponents();
-    }
-
-    /**
-     * Constructeur sans contrôleur (utilisé pour l'initialisation MVC)
-     */
-    public UserListView() {
-        this(null);
     }
 
     /**
@@ -170,30 +156,24 @@ public class UserListView extends AbstractComponent implements IUserListView {
         mSearchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if (mController != null) {
-                    mController.searchUsers(mSearchField.getText().trim());
+                if (mActionListener != null) {
+                    mActionListener.onSearchUsersRequested(mSearchField.getText().trim());
                 }
             }
         });
 
         JButton searchButton = new JButton("Rechercher");
-        searchButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mController != null) {
-                    mController.searchUsers(mSearchField.getText().trim());
-                }
+        searchButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                mActionListener.onSearchUsersRequested(mSearchField.getText().trim());
             }
         });
 
         JButton resetButton = new JButton("Réinitialiser");
-        resetButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                mSearchField.setText("");
-                if (mController != null) {
-                    mController.refreshUserList();
-                }
+        resetButton.addActionListener(e -> {
+            mSearchField.setText("");
+            if (mActionListener != null) {
+                mActionListener.onRefreshUserListRequested();
             }
         });
 
@@ -206,9 +186,9 @@ public class UserListView extends AbstractComponent implements IUserListView {
     }
 
     /**
-     * Crée un panel pour un utilisateur
+     * Crée un panel pour un utilisateur avec ses statistiques précalculées
      */
-    protected JPanel createUserPanel(User user) {
+    protected JPanel createUserPanel(User user, int followersCount, int followingCount) {
         // Utiliser GridBagLayout pour un contrôle précis des composants
         JPanel userPanel = new JPanel(new GridBagLayout());
         userPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -229,25 +209,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
         avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // Chargement de l'avatar si disponible
-        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-            File avatarFile = new File(user.getAvatarPath());
-            if (avatarFile.exists()) {
-                try {
-                    ImageIcon originalIcon = new ImageIcon(user.getAvatarPath());
-                    Image img = originalIcon.getImage().getScaledInstance(AVATAR_SIZE, AVATAR_SIZE, Image.SCALE_SMOOTH);
-                    avatarLabel.setIcon(new ImageIcon(img));
-                } catch (Exception e) {
-                    avatarLabel.setText("?");
-                    avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-                }
-            } else {
-                avatarLabel.setText("?");
-                avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-            }
-        } else {
-            avatarLabel.setText("?");
-            avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        }
+        AvatarUtils.displayAvatar(avatarLabel, user.getAvatarPath(), AVATAR_SIZE, "?");
 
         // Ajout de l'avatar
         gbc.gridx = 0;
@@ -265,10 +227,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
         tagLabel.setForeground(Color.GRAY);
 
         // Informations sur les followers et abonnements
-        int followersCount = mController != null ?
-                ((UserListController) mController).getDatabase().getFollowersCount(user) : 0;
-        int followingCount = user.getFollows().size();
-
         JLabel statsLabel = new JLabel("<html><font color='#666666'>" +
                 followersCount + " abonnés · " +
                 followingCount + " abonnements</font></html>");
@@ -292,47 +250,39 @@ public class UserListView extends AbstractComponent implements IUserListView {
         gbc.gridy = 2;
         userPanel.add(statsLabel, gbc);
 
-        // Création des boutons avec une taille fixe et plus visible
+        // Création des boutons pour suivre/ne plus suivre
         final JButton followButton = new JButton("Suivre");
         followButton.setPreferredSize(new Dimension(120, 30));
         followButton.setFont(new Font("Arial", Font.BOLD, 13));
-        followButton.setBackground(new Color(255, 255, 255)); // Fond blanc
-        followButton.setForeground(new Color(30, 144, 255));  // Texte bleu
+        followButton.setBackground(new Color(255, 255, 255));
+        followButton.setForeground(new Color(30, 144, 255));
         followButton.setOpaque(true);
         followButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(30, 144, 255), 2), // Bordure bleue
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)  // Padding interne
+                BorderFactory.createLineBorder(new Color(30, 144, 255), 2),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
 
         final JButton unfollowButton = new JButton("Ne plus suivre");
         unfollowButton.setPreferredSize(new Dimension(130, 30));
-        // Augmenter la taille et le gras de la police pour une meilleure lisibilité
         unfollowButton.setFont(new Font("Arial", Font.BOLD, 13));
-        unfollowButton.setBackground(new Color(255, 255, 255)); // Fond blanc
-        unfollowButton.setForeground(new Color(220, 20, 60));    // Texte rouge
+        unfollowButton.setBackground(new Color(255, 255, 255));
+        unfollowButton.setForeground(new Color(220, 20, 60));
         unfollowButton.setOpaque(true);
         unfollowButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 20, 60), 2), // Bordure rouge
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)  // Padding interne
+                BorderFactory.createLineBorder(new Color(220, 20, 60), 2),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
 
         // Ajout des écouteurs d'événements
-        followButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mController != null) {
-                    mController.followUser(user);
-                }
+        followButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                mActionListener.onFollowUserRequested(user);
             }
         });
 
-        unfollowButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Clic sur le bouton Ne plus suivre pour @" + user.getUserTag());
-                if (mController != null) {
-                    mController.unfollowUser(user);
-                }
+        unfollowButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                mActionListener.onUnfollowUserRequested(user);
             }
         });
 
@@ -363,12 +313,11 @@ public class UserListView extends AbstractComponent implements IUserListView {
     }
 
     @Override
-    public void updateUserList(Set<User> users) {
+    public void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap) {
         // Vider la liste actuelle
         mUsersPanel.removeAll();
         mDisplayedUsers.clear();
         mUserButtons.clear();
-
 
         // Utiliser un Map pour éliminer les doublons par UUID
         Map<UUID, User> uniqueUsers = new HashMap<>();
@@ -384,11 +333,14 @@ public class UserListView extends AbstractComponent implements IUserListView {
             uniqueUsers.put(user.getUuid(), user);
         }
 
-
         // Ajouter les utilisateurs uniques à l'affichage
         for (User user : uniqueUsers.values()) {
+            // Récupérer le nombre de followers depuis la map
+            int followersCount = followersCountMap.getOrDefault(user.getUuid(), 0);
+            int followingCount = user.getFollows().size();
+
             mDisplayedUsers.add(user);
-            JPanel userPanel = createUserPanel(user);
+            JPanel userPanel = createUserPanel(user, followersCount, followingCount);
             mUsersPanel.add(userPanel);
         }
 
@@ -461,39 +413,16 @@ public class UserListView extends AbstractComponent implements IUserListView {
     }
 
     @Override
-    public void showError(String title, String message) {
-        JOptionPane.showMessageDialog(mMainPanel, message, title, JOptionPane.ERROR_MESSAGE);
-    }
-
-    @Override
-    public void showInfo(String title, String message) {
-        JOptionPane.showMessageDialog(mMainPanel, message, title, JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    @Override
     public JComponent getComponent() {
         return mMainPanel;
     }
 
     @Override
-    public void init() {
-        // Essayer de forcer un look and feel cohérent
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Initialisation de la liste des utilisateurs
-        if (mController != null) {
-            mController.initUserList();
-        } else {
-            System.err.println("Le contrôleur n'est pas initialisé pour la vue UserListView");
-        }
-    }
-
-    @Override
     public JComponent getView() {
         return getComponent();
+    }
+
+    public void setActionListener(IUserListViewActionListener listener) {
+        this.mActionListener = listener;
     }
 }

@@ -64,5 +64,10 @@ public class Session implements ISession {
 		}
 
 		System.out.println("Tous les observateurs ont été notifiés");
+
+		// Ajouter cette ligne pour émettre l'événement UserLoggedOutEvent
+		main.java.com.ubo.tp.message.core.event.EventManager.getInstance().fireEvent(
+				new main.java.com.ubo.tp.message.core.event.SessionEvents.UserLoggedOutEvent()
+		);
 	}
 }

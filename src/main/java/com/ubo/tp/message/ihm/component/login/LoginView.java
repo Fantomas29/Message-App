@@ -8,11 +8,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -24,10 +20,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
-import main.java.com.ubo.tp.message.core.session.ISession;
-import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 import main.java.com.ubo.tp.message.ihm.component.IComponent;
+
 
 /**
  * Implémentation de la vue de login/inscription
@@ -37,7 +32,7 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
     /**
      * Référence au contrôleur
      */
-    public ILoginController mController;
+    private ILoginViewActionListener mActionListener;
 
     /**
      * Panel principal de la vue
@@ -59,12 +54,8 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
 
     /**
      * Constructeur
-     *
-     * @param controller Contrôleur associé à la vue
      */
-    public LoginView(ILoginController controller) {
-        this.mController = controller;
-
+    public LoginView() {
         // Initialisation des composants graphiques
         this.initComponents();
     }
@@ -204,7 +195,12 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
         mAvatarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                mController.selectAvatar();
+                if (mActionListener != null) {
+                    String path = mActionListener.onAvatarSelectionRequested();
+                    if (path != null) {
+                        updateAvatarPath(path);
+                    }
+                }
             }
         });
 
@@ -295,7 +291,9 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
         String userTag = mLoginUserTagField.getText().trim();
         String password = new String(mLoginPasswordField.getPassword());
 
-        mController.loginUser(userTag, password);
+        if (mActionListener != null) {
+            mActionListener.onLoginRequested(userTag, password);
+        }
     }
 
     /**
@@ -312,13 +310,10 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
             return;
         }
 
-        // Création de l'utilisateur
-        Set<String> follows = new HashSet<>();
-        User newUser = new User(UUID.randomUUID(), tag, password, name, follows,
-                mAvatarLabel.getText().equals("Aucun avatar sélectionné") ? "" : mAvatarLabel.getText());
-
-        // Demande au controller d'enregistrer l'utilisateur
-        mController.signupUser(newUser);
+        if (mActionListener != null) {
+            mActionListener.onSignupRequested(name, tag, password,
+                    mAvatarLabel.getText().equals("Aucun avatar sélectionné") ? "" : mAvatarLabel.getText());
+        }
     }
 
     @Override
@@ -352,59 +347,18 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
     }
 
     @Override
-    public void showError(String title, String message) {
-        JOptionPane.showMessageDialog(
-                mMainPanel,
-                message,
-                title,
-                JOptionPane.ERROR_MESSAGE
-        );
-    }
-
-    @Override
-    public void showInfo(String title, String message) {
-        JOptionPane.showMessageDialog(
-                mMainPanel,
-                message,
-                title,
-                JOptionPane.INFORMATION_MESSAGE
-        );
-    }
-
-    @Override
     public void init() {
-        validateLogoutState();
+        // Rien à faire
+    }
+
+    public void setActionListener(ILoginViewActionListener listener) {
+        this.mActionListener = listener;
     }
 
     @Override
-    public JComponent getView() {
-        return getComponent();
-    }
-
-    /**
-     * Vérifie que l'utilisateur est bien déconnecté lorsque la vue de login est affichée
-     */
-    public void validateLogoutState() {
-        // Cette méthode doit être appelée quand la vue de login devient visible
-        // Nous allons l'appeler explicitement après une déconnexion
-
-        // Nous avons besoin d'accéder à la session - supposons que nous pouvons l'obtenir via le contrôleur
-        if (mController instanceof LoginController) {
-            LoginController loginController = (LoginController) mController;
-            ISession session = loginController.mSession;
-
-            if (session != null && session.getConnectedUser() != null) {
-                // L'utilisateur n'est pas correctement déconnecté!
-                System.err.println("ERREUR: Un utilisateur est toujours connecté alors que la vue de login est affichée!");
-                System.err.println("Utilisateur connecté: @" + session.getConnectedUser().getUserTag());
-
-                // On pourrait même afficher un message d'erreur
-                showError("Erreur de session",
-                        "Un problème est survenu lors de la déconnexion. " +
-                                "Veuillez redémarrer l'application si vous rencontrez des problèmes.");
-            } else {
-                System.out.println("Validation de la déconnexion: OK - Aucun utilisateur connecté");
-            }
-        }
+    public void notifyLogoutError() {
+        showError("Erreur de session",
+                "Un problème est survenu lors de la déconnexion. " +
+                        "Veuillez redémarrer l'application si vous rencontrez des problèmes.");
     }
 }

@@ -18,7 +18,7 @@ import main.java.com.ubo.tp.message.datamodel.User;
 /**
  * Implémentation du contrôleur pour la gestion de l'authentification des utilisateurs
  */
-public class LoginController implements ILoginController {
+public class LoginController implements ILoginController, ILoginViewActionListener {
 
     /**
      * Référence vers la base de données
@@ -183,16 +183,44 @@ public class LoginController implements ILoginController {
         return null;
     }
 
-    /**
-     * Crée un nouvel utilisateur à partir des informations fournies
-     *
-     * @param name Nom de l'utilisateur
-     * @param tag Tag utilisateur
-     * @param password Mot de passe
-     * @return Un nouvel objet User
-     */
-    public User createUser(String name, String tag, String password) {
+    // Implémentation des méthodes de callback
+    @Override
+    public void onLoginRequested(String userTag, String password) {
+        this.loginUser(userTag, password);
+    }
+
+    @Override
+    public void onSignupRequested(String name, String tag, String password, String avatarPath) {
+        // Création de l'utilisateur
         Set<String> follows = new HashSet<>();
-        return new User(UUID.randomUUID(), tag, password, name, follows, mAvatarPath);
+        User newUser = new User(UUID.randomUUID(), tag, password, name, follows, avatarPath);
+
+        // Enregistrement de l'utilisateur
+        this.signupUser(newUser);
+    }
+
+    @Override
+    public String onAvatarSelectionRequested() {
+        return this.selectAvatar();
+    }
+
+    /**
+     * Vérifie l'état de déconnexion et notifie la vue si nécessaire
+     */
+    public void validateLogoutState() {
+        // Vérification que l'utilisateur est bien déconnecté (logique du contrôleur)
+        boolean isLogoutValid = (mSession == null || mSession.getConnectedUser() == null);
+
+        if (!isLogoutValid) {
+            // Obtention des informations d'erreur
+            String errorUserTag = mSession.getConnectedUser().getUserTag();
+            System.err.println("ERREUR: Un utilisateur est toujours connecté alors que la vue de login est affichée!");
+            System.err.println("Utilisateur connecté: @" + errorUserTag);
+
+            // Délégation à la vue pour l'affichage du message
+            mView.notifyLogoutError();
+        } else {
+            System.out.println("Validation de la déconnexion: OK - Aucun utilisateur connecté");
+        }
     }
 }

@@ -177,7 +177,7 @@ public class MessageAppMenuBar extends JMenuBar {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Appel à la méthode pour afficher la liste des utilisateurs
-                mMessageApp.showUserList();
+                mMessageApp.navigateTo(MessageApp.NavigationType.USER_LIST);
             }
         });
 
@@ -201,7 +201,7 @@ public class MessageAppMenuBar extends JMenuBar {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Appel à la méthode pour afficher les messages
-                mMessageApp.showMessages();
+                mMessageApp.navigateTo(MessageApp.NavigationType.MESSAGES);
             }
         });
 

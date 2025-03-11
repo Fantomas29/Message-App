@@ -14,14 +14,14 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
-import main.java.com.ubo.tp.message.ihm.component.login.LoginView;
+import main.java.com.ubo.tp.message.ihm.component.home.HomeView;
+import main.java.com.ubo.tp.message.ihm.component.login.LoginController;
 
 /**
  * Classe principale de l'interface utilisateur de l'application.
@@ -70,7 +70,7 @@ public class MessageAppIHM {
     public MessageAppIHM(MessageApp messageApp) {
         this.mMessageApp = messageApp;
 
-        // Enregistrement aux événements de session
+        // Enregistrement aux événements de session et de navigation
         this.registerSessionEvents();
     }
 
@@ -81,19 +81,15 @@ public class MessageAppIHM {
         EventManager eventManager = EventManager.getInstance();
 
         // Événement de connexion
-        eventManager.addListener(SessionEvents.UserLoggedInEvent.class, new IEventListener<SessionEvents.UserLoggedInEvent>() {
-            @Override
-            public void onEvent(SessionEvents.UserLoggedInEvent event) {
-                onUserLogin(event.getUser());
-            }
-        });
+        eventManager.addListener(SessionEvents.UserLoggedInEvent.class, event -> onUserLogin(event.getUser()));
 
         // Événement de déconnexion
-        eventManager.addListener(SessionEvents.UserLoggedOutEvent.class, new IEventListener<SessionEvents.UserLoggedOutEvent>() {
-            @Override
-            public void onEvent(SessionEvents.UserLoggedOutEvent event) {
-                onUserLogout();
-            }
+        eventManager.addListener(SessionEvents.UserLoggedOutEvent.class, event -> onUserLogout());
+
+        // Événement de mise à jour de profil
+        eventManager.addListener(SessionEvents.UserProfileUpdatedEvent.class, event -> {
+            // Mettre à jour la vue d'accueil avec les informations utilisateur à jour
+            mMainView.updateUserInfo(event.getUser());
         });
     }
 
@@ -104,64 +100,30 @@ public class MessageAppIHM {
         EventManager eventManager = EventManager.getInstance();
 
         // Écouter l'événement de navigation pour la liste des utilisateurs
-        eventManager.addListener(NavigationEvents.ShowUserListViewEvent.class, new IEventListener<NavigationEvents.ShowUserListViewEvent>() {
-            @Override
-            public void onEvent(NavigationEvents.ShowUserListViewEvent event) {
-                showUserListView(mMessageApp.getUserListView().getComponent());
-            }
-        });
+        eventManager.addListener(NavigationEvents.ShowUserListViewEvent.class, event -> showUserListView(mMessageApp.getUserListView().getComponent()));
 
         // Écouter l'événement de navigation pour le profil
-        eventManager.addListener(NavigationEvents.ShowProfileViewEvent.class, new IEventListener<NavigationEvents.ShowProfileViewEvent>() {
-            @Override
-            public void onEvent(NavigationEvents.ShowProfileViewEvent event) {
-                showProfileView(mMessageApp.getProfileView().getComponent());
-            }
-        });
+        eventManager.addListener(NavigationEvents.ShowProfileViewEvent.class, event -> showProfileView(mMessageApp.getProfileView().getComponent()));
 
         // Écouter l'événement de navigation pour les messages
-        eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, new IEventListener<NavigationEvents.ShowMessageViewEvent>() {
-            @Override
-            public void onEvent(NavigationEvents.ShowMessageViewEvent event) {
-                showMessageView(mMessageApp.getMessageView().getComponent());
-            }
-        });
+        eventManager.addListener(NavigationEvents.ShowMessageViewEvent.class, event -> showMessageView(mMessageApp.getMessageView().getComponent()));
 
         // Écouter l'événement pour l'affichage de la vue principale
-        eventManager.addListener(NavigationEvents.ShowMainViewEvent.class, new IEventListener<NavigationEvents.ShowMainViewEvent>() {
-            @Override
-            public void onEvent(NavigationEvents.ShowMainViewEvent event) {
-                showMainView();
-            }
-        });
+        eventManager.addListener(NavigationEvents.ShowMainViewEvent.class, event -> showMainView());
 
         // Écouter l'événement pour l'affichage de la vue de login
-        eventManager.addListener(NavigationEvents.ShowLoginViewEvent.class, new IEventListener<NavigationEvents.ShowLoginViewEvent>() {
-            @Override
-            public void onEvent(NavigationEvents.ShowLoginViewEvent event) {
-                showLoginView();
-            }
-        });
+        eventManager.addListener(NavigationEvents.ShowLoginViewEvent.class, event -> showLoginView());
     }
 
     /**
      * Initialisation de l'interface utilisateur.
      */
     public void init() {
-        // Initialisation du look and feel
-        this.initLookAndFeel();
+        // Configuration initiale de l'IHM
+        initUIComponents();
 
-        // Création et configuration de la fenêtre principale
-        this.createMainFrame();
-
-        // Initialisation des vues
-        this.initViews();
-
-        // Initialisation de la barre de menu
-        this.initMenuBar();
-
-        // Création du gestionnaire de notifications
-        new NotificationManager(mFrame);
+        // Configuration du gestionnaire de notifications
+        NotificationManager.getInstance().setMainFrame(mFrame);
 
         // Enregistrement des écouteurs d'événements de navigation
         this.registerNavigationEvents();
@@ -171,21 +133,17 @@ public class MessageAppIHM {
     }
 
     /**
-     * Initialisation du look and feel du système.
+     * Initialise les composants de l'interface utilisateur.
      */
-    protected void initLookAndFeel() {
+    private void initUIComponents() {
+        // Initialisation du look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                 | UnsupportedLookAndFeelException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
-    }
 
-    /**
-     * Création et configuration de la fenêtre principale.
-     */
-    protected void createMainFrame() {
+        // Création et configuration de la fenêtre principale
         mFrame = new JFrame("MessageApp");
         mFrame.setSize(800, 600);
         mFrame.setLocationRelativeTo(null);
@@ -208,19 +166,15 @@ public class MessageAppIHM {
         } catch (Exception e) {
             System.err.println("Impossible de charger l'icône de l'application");
         }
-    }
 
-    /**
-     * Initialisation des vues de l'application.
-     */
-    protected void initViews() {
         // Initialisation du panel principal avec CardLayout
         mCardLayout = new CardLayout();
         mMainPanel = new JPanel(mCardLayout);
         mFrame.getContentPane().add(mMainPanel, BorderLayout.CENTER);
 
         // Initialisation de la vue principale d'accueil
-        mMainView = new HomeView(mMessageApp.getSession(), mMessageApp);
+        mMainView = new HomeView(mMessageApp.getSession());
+        mMainView.setActionListener(mMessageApp.getHomeController());
 
         // Ajout des vues au CardLayout
         mMainPanel.add(mMessageApp.getLoginView().getComponent(), LOGIN_VIEW);
@@ -228,12 +182,8 @@ public class MessageAppIHM {
 
         // Affichage de la vue de login par défaut
         mCardLayout.show(mMainPanel, LOGIN_VIEW);
-    }
 
-    /**
-     * Initialisation de la barre de menu.
-     */
-    protected void initMenuBar() {
+        // Initialisation de la barre de menu
         MessageAppMenuBar menuBar = new MessageAppMenuBar(mFrame, mMessageApp);
         mFrame.setJMenuBar(menuBar);
     }
@@ -350,90 +300,33 @@ public class MessageAppIHM {
     }
 
     /**
-     * Méthode appelée pour afficher la vue de profil
+     * Méthode pour afficher la vue de profil
      *
      * @param profileView La vue de profil à afficher
      */
     public void showProfileView(JComponent profileView) {
-        // Vérifiez d'abord si la vue de profil est déjà dans le CardLayout
-        boolean profileViewExists = false;
-        for (Component comp : mMainPanel.getComponents()) {
-            if (comp.equals(profileView)) {
-                profileViewExists = true;
-                break;
-            }
-        }
-
-        // Si la vue n'existe pas encore, l'ajouter
-        if (!profileViewExists) {
-            mMainPanel.add(profileView, PROFILE_VIEW);
-        } else {
-            // Sinon, la remplacer
-            mMainPanel.remove(profileView);
-            mMainPanel.add(profileView, PROFILE_VIEW);
-            mMainPanel.revalidate();
-        }
-
-        // Afficher la vue de profil
-        mCardLayout.show(mMainPanel, PROFILE_VIEW);
+        showView(profileView, PROFILE_VIEW);
     }
 
     /**
-     * Méthode appelée pour afficher la vue de liste des utilisateurs
+     * Méthode pour afficher la vue de liste des utilisateurs
      *
      * @param userListView La vue de liste des utilisateurs à afficher
      */
     public void showUserListView(JComponent userListView) {
-        // Vérifiez d'abord si la vue est déjà dans le CardLayout
-        boolean userListViewExists = false;
-        for (Component comp : mMainPanel.getComponents()) {
-            if (comp.equals(userListView)) {
-                userListViewExists = true;
-                break;
-            }
-        }
-
-        // Si la vue n'existe pas encore, l'ajouter
-        if (!userListViewExists) {
-            mMainPanel.add(userListView, USER_LIST_VIEW);
-        } else {
-            // Sinon, la remplacer
-            mMainPanel.remove(userListView);
-            mMainPanel.add(userListView, USER_LIST_VIEW);
-            mMainPanel.revalidate();
-        }
-
-        // Afficher la vue de liste des utilisateurs
-        mCardLayout.show(mMainPanel, USER_LIST_VIEW);
+        showView(userListView, USER_LIST_VIEW);
     }
 
     /**
-     * Méthode appelée pour afficher la vue des messages
+     * Méthode pour afficher la vue des messages
      *
      * @param messageView La vue des messages à afficher
      */
     public void showMessageView(JComponent messageView) {
-        // Vérifiez d'abord si la vue est déjà dans le CardLayout
-        boolean messageViewExists = false;
-        for (Component comp : mMainPanel.getComponents()) {
-            if (comp.equals(messageView)) {
-                messageViewExists = true;
-                break;
-            }
-        }
+        // Marquer les messages comme lus avant d'afficher la vue
+        NotificationManager.getInstance().markAllAsRead();
 
-        // Si la vue n'existe pas encore, l'ajouter
-        if (!messageViewExists) {
-            mMainPanel.add(messageView, MESSAGE_VIEW);
-        } else {
-            // Sinon, la remplacer
-            mMainPanel.remove(messageView);
-            mMainPanel.add(messageView, MESSAGE_VIEW);
-            mMainPanel.revalidate();
-        }
-
-        // Afficher la vue des messages
-        mCardLayout.show(mMainPanel, MESSAGE_VIEW);
+        showView(messageView, MESSAGE_VIEW);
     }
 
     /**
@@ -475,11 +368,41 @@ public class MessageAppIHM {
         mMainView.updateUserInfo(null);
 
         // Validation explicite de l'état de déconnexion dans la vue de login
-        if (mMessageApp.getLoginView() instanceof LoginView) {
-            ((LoginView) mMessageApp.getLoginView()).validateLogoutState();
+        if (mMessageApp.getLoginController() instanceof LoginController) {
+            ((LoginController) mMessageApp.getLoginController()).validateLogoutState();
         }
 
         System.out.println("Interface mise à jour pour refléter la déconnexion");
+    }
+
+    /**
+     * Méthode générique pour afficher une vue avec gestion dynamique du CardLayout
+     *
+     * @param view La vue à afficher
+     * @param viewName Le nom de la vue dans le CardLayout
+     */
+    private void showView(JComponent view, String viewName) {
+        // Vérifier si la vue existe déjà dans le panel
+        boolean viewExists = false;
+        for (Component comp : mMainPanel.getComponents()) {
+            if (comp.equals(view)) {
+                viewExists = true;
+                break;
+            }
+        }
+
+        // Si la vue n'existe pas, l'ajouter
+        if (!viewExists) {
+            mMainPanel.add(view, viewName);
+        } else {
+            // Si la vue existe, la remplacer
+            mMainPanel.remove(view);
+            mMainPanel.add(view, viewName);
+            mMainPanel.revalidate();
+        }
+
+        // Afficher la vue
+        mCardLayout.show(mMainPanel, viewName);
     }
 
 }

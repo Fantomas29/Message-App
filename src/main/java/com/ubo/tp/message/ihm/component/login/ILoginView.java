@@ -1,12 +1,11 @@
 package main.java.com.ubo.tp.message.ihm.component.login;
 
-import main.java.com.ubo.tp.message.ihm.component.IView;
+import main.java.com.ubo.tp.message.ihm.component.IViewWithMessages;
 
 /**
  * Interface de la vue de login/inscription
  */
-public interface ILoginView extends IView {
-
+public interface ILoginView extends IViewWithMessages {
     /**
      * Réinitialise les champs du formulaire de connexion
      */
@@ -25,18 +24,7 @@ public interface ILoginView extends IView {
     void updateAvatarPath(String avatarPath);
 
     /**
-     * Affiche un message d'erreur
-     *
-     * @param title Titre du message
-     * @param message Contenu du message
+     * Notifie la vue d'une erreur lors de la déconnexion
      */
-    void showError(String title, String message);
-
-    /**
-     * Affiche un message d'information
-     *
-     * @param title Titre du message
-     * @param message Contenu du message
-     */
-    void showInfo(String title, String message);
+    void notifyLogoutError();
 }

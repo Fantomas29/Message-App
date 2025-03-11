@@ -5,14 +5,17 @@ import java.util.Set;
 
 import main.java.com.ubo.tp.message.core.EntityManager;
 import main.java.com.ubo.tp.message.core.database.IDatabase;
+import main.java.com.ubo.tp.message.core.event.EventManager;
+import main.java.com.ubo.tp.message.core.event.MessageEvents;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.Message;
 import main.java.com.ubo.tp.message.datamodel.User;
+import main.java.com.ubo.tp.message.ihm.NotificationManager;
 
 /**
  * Contrôleur pour la gestion des messages
  */
-public class MessageController implements IMessageController {
+public class MessageController implements IMessageController, IMessageViewActionListener {
 
     /**
      * Référence vers la base de données
@@ -47,6 +50,15 @@ public class MessageController implements IMessageController {
         this.mEntityManager = entityManager;
         this.mSession = session;
         this.mView = view;
+
+        // Ajout de l'écoute des événements de nouveaux messages
+        EventManager.getInstance().addListener(
+                MessageEvents.FollowedUserMessageEvent.class,
+                event -> {
+                    // Rafraîchir les messages lorsqu'un utilisateur suivi envoie un message
+                    refreshMessages();
+                }
+        );
     }
 
     @Override
@@ -115,6 +127,9 @@ public class MessageController implements IMessageController {
                 filteredMessages.add(message);
             }
         }
+
+        // Marquer tous les messages comme lus puisque l'utilisateur les consulte
+        NotificationManager.getInstance().markAllAsRead();
 
         // Mise à jour de la vue
         mView.updateMessageList(filteredMessages);
@@ -228,5 +243,21 @@ public class MessageController implements IMessageController {
 
         // Mise à jour de la vue
         mView.updateMessageList(filteredMessages);
+    }
+
+    // Implémentation des méthodes de callback
+    @Override
+    public void onSendMessageRequested(String messageText) {
+        this.sendMessage(messageText);
+    }
+
+    @Override
+    public void onSearchMessagesRequested(String searchText) {
+        this.searchMessages(searchText);
+    }
+
+    @Override
+    public void onRefreshMessagesRequested() {
+        this.refreshMessages();
     }
 }

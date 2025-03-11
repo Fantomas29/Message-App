@@ -1,0 +1,6 @@
+#
+#Tue Mar 11 10:45:21 CET 2025
+Date=1741686321583
+Sender=52ca562b-7f53-4d90-b36c-706bc372f318
+Text=ah salut \!
+UUID=8b8550eb-f4f4-48f0-a16c-a43d5835638f

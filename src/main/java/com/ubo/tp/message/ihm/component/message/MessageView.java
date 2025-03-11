@@ -7,13 +7,11 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,8 +28,9 @@ import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.Message;
 import main.java.com.ubo.tp.message.datamodel.User;
-import main.java.com.ubo.tp.message.ihm.MessageNotificationManager;
+import main.java.com.ubo.tp.message.ihm.NotificationManager;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
+import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
 
 /**
@@ -52,7 +51,7 @@ public class MessageView extends AbstractComponent implements IMessageView {
     /**
      * Référence au contrôleur
      */
-    public IMessageController mController;
+    private IMessageViewActionListener mActionListener;
 
     /**
      * Session de l'application
@@ -102,28 +101,22 @@ public class MessageView extends AbstractComponent implements IMessageView {
 
     /**
      * Constructeur
-     *
-     * @param controller Contrôleur associé à la vue
      */
-    public MessageView(IMessageController controller) {
-        this.mController = controller;
+    public MessageView() {
         this.mDisplayedMessages = new ArrayList<>();
         this.mDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-
-        // Si le contrôleur est défini, récupérer la session
-        if (controller instanceof MessageController) {
-            this.mSession = ((MessageController) controller).mSession;
-        }
 
         // Initialisation des composants graphiques
         this.initComponents();
     }
 
     /**
-     * Constructeur sans contrôleur (utilisé pour l'initialisation MVC)
+     * Définit la session de l'application
+     *
+     * @param session Session de l'application
      */
-    public MessageView() {
-        this(null);
+    public void setSession(ISession session) {
+        this.mSession = session;
     }
 
     /**
@@ -201,8 +194,8 @@ public class MessageView extends AbstractComponent implements IMessageView {
         mSearchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if (mController != null) {
-                    mController.searchMessages(mSearchField.getText().trim());
+                if (mActionListener != null) {
+                    mActionListener.onSearchMessagesRequested(mSearchField.getText().trim());
                 }
             }
         });
@@ -211,8 +204,8 @@ public class MessageView extends AbstractComponent implements IMessageView {
         searchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (mController != null) {
-                    mController.searchMessages(mSearchField.getText().trim());
+                if (mActionListener != null) {
+                    mActionListener.onSearchMessagesRequested(mSearchField.getText().trim());
                 }
             }
         });
@@ -222,8 +215,8 @@ public class MessageView extends AbstractComponent implements IMessageView {
             @Override
             public void actionPerformed(ActionEvent e) {
                 mSearchField.setText("");
-                if (mController != null) {
-                    mController.refreshMessages();
+                if (mActionListener != null) {
+                    mActionListener.onRefreshMessagesRequested();
                 }
             }
         });
@@ -267,8 +260,8 @@ public class MessageView extends AbstractComponent implements IMessageView {
         mSendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (mController != null) {
-                    mController.sendMessage(mMessageField.getText());
+                if (mActionListener != null) {
+                    mActionListener.onSendMessageRequested(mMessageField.getText());
                 }
             }
         });
@@ -313,12 +306,10 @@ public class MessageView extends AbstractComponent implements IMessageView {
         // Panel principal du message
         JPanel messagePanel = new JPanel(new GridBagLayout());
 
-        // Récupération de l'utilisateur connecté - assurez-vous que mSession est initialisé
+        // Récupération de l'utilisateur connecté
         User connectedUser = null;
         if (mSession != null) {
             connectedUser = mSession.getConnectedUser();
-        } else if (mController != null && mController instanceof MessageController) {
-            connectedUser = ((MessageController) mController).mSession.getConnectedUser();
         }
 
         // Vérification si le message est de l'utilisateur connecté
@@ -360,25 +351,7 @@ public class MessageView extends AbstractComponent implements IMessageView {
         avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // Chargement de l'avatar si disponible
-        if (sender.getAvatarPath() != null && !sender.getAvatarPath().isEmpty()) {
-            File avatarFile = new File(sender.getAvatarPath());
-            if (avatarFile.exists()) {
-                try {
-                    ImageIcon originalIcon = new ImageIcon(sender.getAvatarPath());
-                    Image img = originalIcon.getImage().getScaledInstance(AVATAR_SIZE, AVATAR_SIZE, Image.SCALE_SMOOTH);
-                    avatarLabel.setIcon(new ImageIcon(img));
-                } catch (Exception e) {
-                    avatarLabel.setText("?");
-                    avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-                }
-            } else {
-                avatarLabel.setText("?");
-                avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-            }
-        } else {
-            avatarLabel.setText("?");
-            avatarLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        }
+        AvatarUtils.displayAvatar(avatarLabel, sender.getAvatarPath(), AVATAR_SIZE, "?");
 
         // Ajout de l'avatar
         gbc.gridx = 0;
@@ -493,33 +466,11 @@ public class MessageView extends AbstractComponent implements IMessageView {
     }
 
     @Override
-    public void showError(String title, String message) {
-        JOptionPane.showMessageDialog(mMainPanel, message, title, JOptionPane.ERROR_MESSAGE);
-    }
-
-    @Override
-    public void showInfo(String title, String message) {
-        JOptionPane.showMessageDialog(mMainPanel, message, title, JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    @Override
     public JComponent getComponent() {
         return mMainPanel;
     }
 
-    @Override
-    public void init() {
-        // Initialisation de la liste des messages
-        if (mController != null) {
-            mController.refreshMessages();
-        }
-
-        // Marquer tous les messages comme lus quand on affiche la vue
-        MessageNotificationManager.getInstance().markAllAsRead();
-    }
-
-    @Override
-    public JComponent getView() {
-        return getComponent();
+    public void setActionListener(IMessageViewActionListener listener) {
+        this.mActionListener = listener;
     }
 }

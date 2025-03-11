@@ -2,26 +2,20 @@ package main.java.com.ubo.tp.message.ihm.component;
 
 import javax.swing.JComponent;
 
-/**
- * Interface commune pour tous les composants de l'application
- */
 public interface IComponent {
-    
+    /**
+     * Retourne le composant Swing associé
+     * @return Le composant Swing
+     */
+    JComponent getComponent();
+
     /**
      * Initialise le composant
      */
     void init();
-    
+
     /**
-     * Retourne la vue du composant
-     * 
-     * @return Le composant Swing représentant la vue
-     */
-    JComponent getView();
-    
-    /**
-     * Libère les ressources du composant
+     * Nettoie les ressources lors de la destruction
      */
     void destroy();
 }
-

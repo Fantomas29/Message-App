@@ -1,7 +1,6 @@
 package main.java.com.ubo.tp.message.ihm.component.userlist;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import main.java.com.ubo.tp.message.core.EntityManager;
 import main.java.com.ubo.tp.message.core.database.IDatabase;
@@ -11,7 +10,7 @@ import main.java.com.ubo.tp.message.datamodel.User;
 /**
  * Contrôleur pour la gestion de la liste des utilisateurs
  */
-public class UserListController implements IUserListController {
+public class UserListController implements IUserListController, IUserListViewActionListener {
 
     /**
      * Référence vers la base de données
@@ -53,8 +52,17 @@ public class UserListController implements IUserListController {
         // Récupération de tous les utilisateurs
         Set<User> allUsers = mDatabase.getUsers();
 
-        // Mise à jour de la vue
-        mView.updateUserList(allUsers);
+        // Précalculer les statistiques de followers
+        Map<UUID, Integer> followersCountMap = new HashMap<>();
+        for (User user : allUsers) {
+            followersCountMap.put(
+                    user.getUuid(),
+                    mDatabase.getFollowersCount(user)
+            );
+        }
+
+        // Mise à jour de la vue avec les utilisateurs et leurs statistiques
+        mView.updateUserList(allUsers, followersCountMap);
 
         // Mise à jour du statut d'abonnement
         User connectedUser = mSession.getConnectedUser();
@@ -102,9 +110,6 @@ public class UserListController implements IUserListController {
 
         // Mise à jour de la vue
         mView.updateFollowStatus(connectedUser);
-
-        // Notification
-        mView.showInfo("Succès", "Vous êtes maintenant abonné à @" + userToFollow.getUserTag());
     }
 
     @Override
@@ -134,12 +139,6 @@ public class UserListController implements IUserListController {
 
         // Mise à jour de la vue
         mView.updateFollowStatus(connectedUser);
-
-        // Notification
-        mView.showInfo("Succès", "Vous n'êtes plus abonné à @" + userToUnfollow.getUserTag());
-
-        // Log pour débogage
-        System.out.println("Désabonnement de l'utilisateur @" + userToUnfollow.getUserTag() + " effectué");
     }
 
     @Override
@@ -154,6 +153,9 @@ public class UserListController implements IUserListController {
         Set<User> allUsers = mDatabase.getUsers();
         Set<User> filteredUsers = new HashSet<>();
 
+        // Map pour stocker les followers count
+        Map<UUID, Integer> followersCountMap = new HashMap<>();
+
         // Filtre des utilisateurs selon le texte de recherche (tag ou nom)
         String lowerSearchText = searchText.toLowerCase();
 
@@ -161,11 +163,17 @@ public class UserListController implements IUserListController {
             if (user.getUserTag().toLowerCase().contains(lowerSearchText) ||
                     user.getName().toLowerCase().contains(lowerSearchText)) {
                 filteredUsers.add(user);
+
+                // Calculer le nombre de followers pour chaque utilisateur filtré
+                followersCountMap.put(
+                        user.getUuid(),
+                        mDatabase.getFollowersCount(user)
+                );
             }
         }
 
-        // Mise à jour de la vue
-        mView.updateUserList(filteredUsers);
+        // Mise à jour de la vue avec les utilisateurs filtrés et leurs statistiques
+        mView.updateUserList(filteredUsers, followersCountMap);
 
         // Mise à jour du statut d'abonnement
         User connectedUser = mSession.getConnectedUser();
@@ -181,5 +189,31 @@ public class UserListController implements IUserListController {
      */
     public IDatabase getDatabase() {
         return mDatabase;
+    }
+
+    // Implémentation des méthodes de callback
+    @Override
+    public void onInitUserListRequested() {
+        this.initUserList();
+    }
+
+    @Override
+    public void onRefreshUserListRequested() {
+        this.refreshUserList();
+    }
+
+    @Override
+    public void onFollowUserRequested(User userToFollow) {
+        this.followUser(userToFollow);
+    }
+
+    @Override
+    public void onUnfollowUserRequested(User userToUnfollow) {
+        this.unfollowUser(userToUnfollow);
+    }
+
+    @Override
+    public void onSearchUsersRequested(String searchText) {
+        this.searchUsers(searchText);
     }
 }
