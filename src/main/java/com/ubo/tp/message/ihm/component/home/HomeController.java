@@ -4,7 +4,6 @@ import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.User;
-import main.java.com.ubo.tp.message.ihm.MessageApp;
 import main.java.com.ubo.tp.message.ihm.NotificationManager;
 import main.java.com.ubo.tp.message.ihm.component.IController;
 
@@ -14,11 +13,6 @@ import main.java.com.ubo.tp.message.ihm.component.IController;
 public class HomeController implements IController, IHomeViewActionListener {
 
     /**
-     * Application principale
-     */
-    protected MessageApp mMessageApp;
-
-    /**
      * Session de l'application
      */
     protected ISession mSession;
@@ -26,17 +20,15 @@ public class HomeController implements IController, IHomeViewActionListener {
     /**
      * Constructeur
      *
-     * @param messageApp Référence vers l'application principale
      * @param session Session de l'application
      */
-    public HomeController(MessageApp messageApp, ISession session) {
-        this.mMessageApp = messageApp;
+    public HomeController(ISession session) {
         this.mSession = session;
     }
 
     @Override
     public void onShowProfileRequested() {
-        mMessageApp.navigateTo(MessageApp.NavigationType.PROFILE);
+        EventManager.getInstance().fireEvent(new NavigationEvents.ShowProfileViewEvent());
     }
 
     @Override
@@ -44,13 +36,13 @@ public class HomeController implements IController, IHomeViewActionListener {
         // Marquer les messages comme lus
         NotificationManager.getInstance().markAllAsRead();
 
-        // Émettre l'évènement
+        // Émettre un événement de navigation
         EventManager.getInstance().fireEvent(new NavigationEvents.ShowMessageViewEvent());
     }
 
     @Override
     public void onShowUserListRequested() {
-        mMessageApp.navigateTo(MessageApp.NavigationType.USER_LIST);
+        EventManager.getInstance().fireEvent(new NavigationEvents.ShowUserListViewEvent());
     }
 
     @Override
@@ -68,7 +60,8 @@ public class HomeController implements IController, IHomeViewActionListener {
             // Vérifier que la déconnexion a fonctionné
             if (mSession.getConnectedUser() == null) {
                 System.out.println("Déconnexion réussie!");
-                mMessageApp.navigateTo(MessageApp.NavigationType.LOGIN);
+                // Utiliser un événement au lieu d'un appel direct
+                EventManager.getInstance().fireEvent(new NavigationEvents.ShowLoginViewEvent());
             } else {
                 System.err.println("ERREUR: La déconnexion a échoué!");
             }

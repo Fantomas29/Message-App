@@ -173,13 +173,7 @@ public class MessageAppMenuBar extends JMenuBar {
         }
 
         // Ajout d'un écouteur d'événement pour afficher la liste des utilisateurs
-        userListMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Appel à la méthode pour afficher la liste des utilisateurs
-                mMessageApp.navigateTo(MessageApp.NavigationType.USER_LIST);
-            }
-        });
+        userListMenuItem.addActionListener(e -> EventManager.getInstance().fireEvent(new NavigationEvents.ShowUserListViewEvent()));
 
         // Création de l'item "Messages"
         JMenuItem messagesMenuItem = new JMenuItem("Messages");
@@ -196,13 +190,11 @@ public class MessageAppMenuBar extends JMenuBar {
             System.err.println("Impossible de charger l'icône pour Messages");
         }
 
-        // Ajout d'un écouteur d'événement pour afficher les messages
-        messagesMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Appel à la méthode pour afficher les messages
-                mMessageApp.navigateTo(MessageApp.NavigationType.MESSAGES);
-            }
+        messagesMenuItem.addActionListener(e -> {
+            // Marquer les messages comme lus
+            NotificationManager.getInstance().markAllAsRead();
+            // Émettre un événement de navigation
+            EventManager.getInstance().fireEvent(new NavigationEvents.ShowMessageViewEvent());
         });
 
         // Création de l'item "Déconnexion"
