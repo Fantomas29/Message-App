@@ -38,8 +38,4 @@ public abstract class AbstractComponent implements IViewWithMessages {
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
-
-    public void destroy() {
-        // Implémentation par défaut (vide)
-    }
 }

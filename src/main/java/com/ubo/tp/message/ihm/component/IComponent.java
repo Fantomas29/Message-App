@@ -8,14 +8,4 @@ public interface IComponent {
      * @return Le composant Swing
      */
     JComponent getComponent();
-
-    /**
-     * Initialise le composant
-     */
-    void init();
-
-    /**
-     * Nettoie les ressources lors de la destruction
-     */
-    void destroy();
 }
