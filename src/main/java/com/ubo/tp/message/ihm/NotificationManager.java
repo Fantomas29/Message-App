@@ -194,7 +194,7 @@ public class NotificationManager {
             notificationDialog.setVisible(true);
 
             // Timer pour fermer automatiquement la notification après 2 secondes
-            Timer timer = new Timer(2, e -> notificationDialog.dispose());
+            Timer timer = new Timer(1500, e -> notificationDialog.dispose());
             timer.setRepeats(false);
             timer.start();
         });
