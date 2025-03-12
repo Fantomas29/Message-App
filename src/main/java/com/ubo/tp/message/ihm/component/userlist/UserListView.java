@@ -395,11 +395,6 @@ public class UserListView extends AbstractComponent implements IUserListView {
         return mMainPanel;
     }
 
-    @Override
-    public JComponent getView() {
-        return getComponent();
-    }
-
     public void setActionListener(IUserListViewActionListener listener) {
         this.mActionListener = listener;
     }

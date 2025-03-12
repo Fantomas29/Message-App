@@ -24,11 +24,6 @@ public interface ILoginController extends IController {
     void signupUser(User user);
 
     /**
-     * Déconnecte l'utilisateur actuellement connecté.
-     */
-    void logoutUser();
-
-    /**
      * Gère la sélection d'un avatar pour l'inscription
      *
      * @return Le chemin vers l'avatar sélectionné, ou null si annulé

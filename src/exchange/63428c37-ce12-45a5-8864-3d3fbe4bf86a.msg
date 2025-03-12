@@ -1,6 +1,0 @@
-#
-#Wed Mar 05 17:16:19 CET 2025
-Date=1741191379038
-Sender=52ca562b-7f53-4d90-b36c-706bc372f318
-Text=et toi ?
-UUID=63428c37-ce12-45a5-8864-3d3fbe4bf86a

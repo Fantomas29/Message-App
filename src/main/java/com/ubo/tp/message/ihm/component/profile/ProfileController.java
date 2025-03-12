@@ -64,9 +64,6 @@ public class ProfileController implements IProfileController, IProfileViewAction
         User connectedUser = mSession.getConnectedUser();
         if (connectedUser != null) {
             mView.updateUserInfo(connectedUser);
-
-            // Émission d'un événement pour demander l'affichage de la vue de profil
-            EventManager.getInstance().fireEvent(new NavigationEvents.ShowProfileViewEvent());
         }
     }
 

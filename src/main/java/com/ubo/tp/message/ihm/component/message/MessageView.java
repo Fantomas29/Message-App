@@ -28,7 +28,6 @@ import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.Message;
 import main.java.com.ubo.tp.message.datamodel.User;
-import main.java.com.ubo.tp.message.ihm.NotificationManager;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 

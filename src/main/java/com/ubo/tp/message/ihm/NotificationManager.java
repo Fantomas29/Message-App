@@ -4,8 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -19,7 +17,6 @@ import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
-import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.MessageEvents;
 import main.java.com.ubo.tp.message.datamodel.Message;
 
@@ -196,8 +193,8 @@ public class NotificationManager {
             // Affichage de la notification
             notificationDialog.setVisible(true);
 
-            // Timer pour fermer automatiquement la notification après 5 secondes
-            Timer timer = new Timer(5000, e -> notificationDialog.dispose());
+            // Timer pour fermer automatiquement la notification après 2 secondes
+            Timer timer = new Timer(2, e -> notificationDialog.dispose());
             timer.setRepeats(false);
             timer.start();
         });

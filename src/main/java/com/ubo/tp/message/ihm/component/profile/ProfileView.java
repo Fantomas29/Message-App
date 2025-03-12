@@ -1,15 +1,11 @@
 package main.java.com.ubo.tp.message.ihm.component.profile;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -108,15 +104,12 @@ public class ProfileView extends AbstractComponent implements IProfileView {
 
         // Bouton pour changer l'avatar
         mAvatarButton = new JButton("Changer l'avatar");
-        mAvatarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mActionListener != null) {
-                    String avatarPath = mActionListener.onAvatarSelectionRequested();
-                    if (avatarPath != null) {
-                        mNewAvatarPath = avatarPath;
-                        AvatarUtils.displayAvatar(mAvatarLabel, mConnectedUser.getAvatarPath(), 150, "?");
-                    }
+        mAvatarButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                String avatarPath = mActionListener.onAvatarSelectionRequested();
+                if (avatarPath != null) {
+                    mNewAvatarPath = avatarPath;
+                    AvatarUtils.displayAvatar(mAvatarLabel, mNewAvatarPath, 150, "?");
                 }
             }
         });

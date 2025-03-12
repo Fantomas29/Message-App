@@ -21,6 +21,7 @@ import javax.swing.border.EmptyBorder;
 
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 import main.java.com.ubo.tp.message.ihm.component.IComponent;
+import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
 
 /**
@@ -191,17 +192,17 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
         avatarLabel.setFont(new Font("Arial", Font.PLAIN, 14));
 
         mAvatarButton = new JButton("Parcourir...");
-        mAvatarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mActionListener != null) {
-                    String path = mActionListener.onAvatarSelectionRequested();
-                    if (path != null) {
-                        updateAvatarPath(path);
-                    }
+        mAvatarButton.addActionListener(e -> {
+            if (mActionListener != null) {
+                String path = mActionListener.onAvatarSelectionRequested();
+                if (path != null) {
+                    updateAvatarPath(path);
+                    AvatarUtils.displayAvatar(mAvatarLabel, path, 150, "?");
+                    mAvatarLabel.setToolTipText(path);
                 }
             }
         });
+
 
         mAvatarLabel = new JLabel("Aucun avatar sélectionné");
         mAvatarLabel.setFont(new Font("Arial", Font.ITALIC, 12));
@@ -297,6 +298,7 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
         String name = mSignupNameField.getText().trim();
         String tag = mSignupTagField.getText().trim();
         String password = new String(mSignupPasswordField.getPassword());
+        String avatarPath = mAvatarLabel.getToolTipText();
 
         // Vérification des champs obligatoires
         if (name.isEmpty() || tag.isEmpty() || password.isEmpty()) {
@@ -304,9 +306,16 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
             return;
         }
 
+        // Si l'avatar n'est pas sélectionné, envoyer une chaîne vide
+        if (avatarPath == null) {
+            avatarPath = "";
+        }
+
+        AvatarUtils.displayAvatar(mAvatarLabel, "", 150, "?");
+
+
         if (mActionListener != null) {
-            mActionListener.onSignupRequested(name, tag, password,
-                    mAvatarLabel.getText().equals("Aucun avatar sélectionné") ? "" : mAvatarLabel.getText());
+            mActionListener.onSignupRequested(name, tag, password, avatarPath);
         }
     }
 

@@ -16,12 +16,12 @@ import javax.swing.JPanel;
 import javax.swing.UIManager;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
-import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.home.HomeView;
 import main.java.com.ubo.tp.message.ihm.component.login.LoginController;
+import main.java.com.ubo.tp.message.ihm.component.profile.IProfileController;
 
 /**
  * Classe principale de l'interface utilisateur de l'application.
@@ -207,15 +207,6 @@ public class MessageAppIHM {
             if (choice == JOptionPane.NO_OPTION) {
                 // L'utilisateur veut garder le répertoire existant
                 needNewDirectory = false;
-                // Informer la classe technique d'utiliser ce répertoire
-                if (!mMessageApp.initDirectory(currentPath)) {
-                    // Si l'initialisation échoue, on aura besoin d'un nouveau répertoire
-                    needNewDirectory = true;
-                    JOptionPane.showMessageDialog(mFrame,
-                            "Impossible d'utiliser le répertoire configuré.",
-                            "Erreur",
-                            JOptionPane.ERROR_MESSAGE);
-                }
             }
         }
 
@@ -305,6 +296,8 @@ public class MessageAppIHM {
     public void showProfileView() {
         JComponent profileView = mMessageApp.getProfileView().getComponent();
         showView(profileView, PROFILE_VIEW);
+        IProfileController iProfileController = mMessageApp.mProfileController;
+        iProfileController.showProfileView();
     }
 
     /**

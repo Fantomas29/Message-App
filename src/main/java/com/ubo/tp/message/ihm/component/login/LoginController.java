@@ -153,15 +153,6 @@ public class LoginController implements ILoginController, ILoginViewActionListen
     }
 
     @Override
-    public void logoutUser() {
-        // Déconnexion de l'utilisateur
-        mSession.disconnect();
-
-        // Émission d'un événement de déconnexion
-        EventManager.getInstance().fireEvent(new SessionEvents.UserLoggedOutEvent());
-    }
-
-    @Override
     public String selectAvatar() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Sélectionner un avatar");
