@@ -1,31 +1,30 @@
 package main.java.com.ubo.tp.message.ihm.component.login;
 
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+
+import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
+import java.io.File;
 
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
 import main.java.com.ubo.tp.message.ihm.component.IComponent;
 import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
-
 /**
- * Implémentation de la vue de login/inscription
+ * Implémentation de la vue de login/inscription avec JavaFX contenu dans Swing
  */
 public class LoginView extends AbstractComponent implements ILoginView, IComponent {
 
@@ -35,22 +34,31 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
     private ILoginViewActionListener mActionListener;
 
     /**
-     * Panel principal de la vue
+     * Panel principal de la vue (Swing)
      */
     protected JPanel mMainPanel;
 
-    // Composants du panel de connexion
-    protected JTextField mLoginUserTagField;
-    protected JPasswordField mLoginPasswordField;
-    protected JButton mLoginButton;
+    /**
+     * Panel JavaFX embarqué dans Swing
+     */
+    protected JFXPanel jfxPanel;
 
-    // Composants du panel d'inscription
-    protected JTextField mSignupNameField;
-    protected JTextField mSignupTagField;
-    protected JPasswordField mSignupPasswordField;
-    protected JButton mAvatarButton;
-    protected JLabel mAvatarLabel;
-    protected JButton mSignupButton;
+    // Composants JavaFX du panel de connexion
+    protected TextField mLoginUserTagField;
+    protected PasswordField mLoginPasswordField;
+    protected Button mLoginButton;
+
+    // Composants JavaFX du panel d'inscription
+    protected TextField mSignupNameField;
+    protected TextField mSignupTagField;
+    protected PasswordField mSignupPasswordField;
+    protected Button mAvatarButton;
+    protected Label mAvatarLabel;
+    protected ImageView mAvatarImageView;
+    protected Button mSignupButton;
+
+    // Pour stocker le chemin de l'avatar
+    private String mAvatarPath;
 
     /**
      * Constructeur
@@ -64,99 +72,102 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
      * Initialise les composants graphiques
      */
     protected void initComponents() {
+        // Création du panel principal Swing
+        mMainPanel = new JPanel(new BorderLayout());
+
+        // Création du panel JavaFX
+        jfxPanel = new JFXPanel();
+        mMainPanel.add(jfxPanel, BorderLayout.CENTER);
+
+        // La création des composants JavaFX doit se faire sur le thread JavaFX
+        Platform.runLater(() -> createJavaFXContent());
+    }
+
+    /**
+     * Création du contenu JavaFX
+     */
+    private void createJavaFXContent() {
         // Création du panel principal
-        mMainPanel = new JPanel(new BorderLayout(0, 0));
+        BorderPane mainPane = new BorderPane();
+        mainPane.setPadding(new Insets(10));
 
         // Création du titre
-        JLabel titleLabel = new JLabel("Bienvenue sur MessageApp");
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        Label titleLabel = new Label("Bienvenue sur MessageApp");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.setPadding(new Insets(20, 0, 20, 0));
+        BorderPane.setAlignment(titleLabel, Pos.CENTER);
 
         // Ajout du titre au panel
-        mMainPanel.add(titleLabel, BorderLayout.NORTH);
+        mainPane.setTop(titleLabel);
 
         // Création du panel central avec onglets
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setBorder(new EmptyBorder(10, 30, 10, 30));
+        TabPane tabbedPane = new TabPane();
+        tabbedPane.setPadding(new Insets(10, 30, 10, 30));
 
         // Création des panels de connexion et d'inscription
-        JPanel loginPanel = this.createLoginPanel();
-        JPanel signupPanel = this.createSignupPanel();
+        GridPane loginPanel = this.createLoginPanel();
+        GridPane signupPanel = this.createSignupPanel();
 
         // Ajout des panels aux onglets
-        tabbedPane.addTab("Connexion", loginPanel);
-        tabbedPane.addTab("Inscription", signupPanel);
+        Tab loginTab = new Tab("Connexion", loginPanel);
+        Tab signupTab = new Tab("Inscription", signupPanel);
+
+        // Désactiver la fermeture des onglets
+        loginTab.setClosable(false);
+        signupTab.setClosable(false);
+
+        tabbedPane.getTabs().addAll(loginTab, signupTab);
 
         // Ajout des onglets au panel principal
-        mMainPanel.add(tabbedPane, BorderLayout.CENTER);
+        mainPane.setCenter(tabbedPane);
+
+        // Création de la scène JavaFX
+        Scene scene = new Scene(mainPane);
+        jfxPanel.setScene(scene);
     }
 
     /**
      * Création du panel de connexion
      */
-    protected JPanel createLoginPanel() {
-        JPanel loginPanel = new JPanel();
-        loginPanel.setLayout(new GridBagLayout());
-        loginPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+    protected GridPane createLoginPanel() {
+        GridPane loginPanel = new GridPane();
+        loginPanel.setPadding(new Insets(20));
+        loginPanel.setHgap(10);
+        loginPanel.setVgap(10);
+        loginPanel.setAlignment(Pos.CENTER);
 
         // Création des composants
-        JLabel userTagLabel = new JLabel("Tag utilisateur :");
-        userTagLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label userTagLabel = new Label("Tag utilisateur :");
+        userTagLabel.setFont(Font.font("Arial", 14));
 
-        mLoginUserTagField = new JTextField();
-        mLoginUserTagField.setPreferredSize(new Dimension(200, 30));
+        mLoginUserTagField = new TextField();
+        mLoginUserTagField.setPrefWidth(200);
+        mLoginUserTagField.setPrefHeight(30);
 
-        JLabel passwordLabel = new JLabel("Mot de passe :");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label passwordLabel = new Label("Mot de passe :");
+        passwordLabel.setFont(Font.font("Arial", 14));
 
-        mLoginPasswordField = new JPasswordField();
-        mLoginPasswordField.setPreferredSize(new Dimension(200, 30));
+        mLoginPasswordField = new PasswordField();
+        mLoginPasswordField.setPrefWidth(200);
+        mLoginPasswordField.setPrefHeight(30);
 
-        mLoginButton = new JButton("Se connecter");
-        mLoginButton.setPreferredSize(new Dimension(150, 40));
-        mLoginButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                login();
-            }
-        });
+        mLoginButton = new Button("Se connecter");
+        mLoginButton.setPrefSize(150, 40);
+        mLoginButton.setOnAction(e -> login());
 
-        // Ajout des composants au panel avec GridBagConstraints
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        // Ajout des composants au panel
+        loginPanel.add(userTagLabel, 0, 0);
+        loginPanel.add(mLoginUserTagField, 0, 1);
+        loginPanel.add(passwordLabel, 0, 2);
+        loginPanel.add(mLoginPasswordField, 0, 3);
 
-        // Ajout du label userTag
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        loginPanel.add(userTagLabel, gbc);
+        // Conteneur pour centrer le bouton
+        HBox buttonBox = new HBox();
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.getChildren().add(mLoginButton);
+        buttonBox.setPadding(new Insets(20, 0, 0, 0));
 
-        // Ajout du champ userTag
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        loginPanel.add(mLoginUserTagField, gbc);
-
-        // Ajout du label password
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.fill = GridBagConstraints.NONE;
-        loginPanel.add(passwordLabel, gbc);
-
-        // Ajout du champ password
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        loginPanel.add(mLoginPasswordField, gbc);
-
-        // Ajout du bouton de connexion
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(20, 5, 5, 5);
-        loginPanel.add(mLoginButton, gbc);
+        loginPanel.add(buttonBox, 0, 4);
 
         return loginPanel;
     }
@@ -164,117 +175,85 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
     /**
      * Création du panel d'inscription
      */
-    protected JPanel createSignupPanel() {
-        JPanel signupPanel = new JPanel();
-        signupPanel.setLayout(new GridBagLayout());
-        signupPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+    protected GridPane createSignupPanel() {
+        GridPane signupPanel = new GridPane();
+        signupPanel.setPadding(new Insets(20));
+        signupPanel.setHgap(10);
+        signupPanel.setVgap(10);
+        signupPanel.setAlignment(Pos.CENTER);
 
         // Création des composants
-        JLabel nameLabel = new JLabel("Nom :");
-        nameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label nameLabel = new Label("Nom :");
+        nameLabel.setFont(Font.font("Arial", 14));
 
-        mSignupNameField = new JTextField();
-        mSignupNameField.setPreferredSize(new Dimension(200, 30));
+        mSignupNameField = new TextField();
+        mSignupNameField.setPrefWidth(200);
+        mSignupNameField.setPrefHeight(30);
 
-        JLabel tagLabel = new JLabel("Tag utilisateur :");
-        tagLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label tagLabel = new Label("Tag utilisateur :");
+        tagLabel.setFont(Font.font("Arial", 14));
 
-        mSignupTagField = new JTextField();
-        mSignupTagField.setPreferredSize(new Dimension(200, 30));
+        mSignupTagField = new TextField();
+        mSignupTagField.setPrefWidth(200);
+        mSignupTagField.setPrefHeight(30);
 
-        JLabel passwordLabel = new JLabel("Mot de passe :");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label passwordLabel = new Label("Mot de passe :");
+        passwordLabel.setFont(Font.font("Arial", 14));
 
-        mSignupPasswordField = new JPasswordField();
-        mSignupPasswordField.setPreferredSize(new Dimension(200, 30));
+        mSignupPasswordField = new PasswordField();
+        mSignupPasswordField.setPrefWidth(200);
+        mSignupPasswordField.setPrefHeight(30);
 
-        JLabel avatarLabel = new JLabel("Avatar :");
-        avatarLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        Label avatarLabel = new Label("Avatar :");
+        avatarLabel.setFont(Font.font("Arial", 14));
 
-        mAvatarButton = new JButton("Parcourir...");
-        mAvatarButton.addActionListener(e -> {
+        mAvatarButton = new Button("Parcourir...");
+        mAvatarButton.setOnAction(e -> {
             if (mActionListener != null) {
                 String path = mActionListener.onAvatarSelectionRequested();
                 if (path != null) {
-                    updateAvatarPath(path);
-                    AvatarUtils.displayAvatar(mAvatarLabel, path, 150, "?");
-                    mAvatarLabel.setToolTipText(path);
+                    // L'interaction avec l'interface doit se faire sur le thread JavaFX
+                    final String finalPath = path;
+                    Platform.runLater(() -> updateAvatarPath(finalPath));
+                    mAvatarPath = path;
                 }
             }
         });
 
+        mAvatarLabel = new Label("Aucun avatar sélectionné");
+        mAvatarLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
 
-        mAvatarLabel = new JLabel("Aucun avatar sélectionné");
-        mAvatarLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        mAvatarImageView = new ImageView();
+        mAvatarImageView.setFitHeight(100);
+        mAvatarImageView.setFitWidth(100);
+        mAvatarImageView.setPreserveRatio(true);
 
-        mSignupButton = new JButton("S'inscrire");
-        mSignupButton.setPreferredSize(new Dimension(150, 40));
-        mSignupButton.addActionListener(e -> signup());
+        mSignupButton = new Button("S'inscrire");
+        mSignupButton.setPrefSize(150, 40);
+        mSignupButton.setOnAction(e -> signup());
 
-        // Ajout des composants au panel avec GridBagConstraints
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 5, 5, 5);
-
-        // Ajout du label nom
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        signupPanel.add(nameLabel, gbc);
-
-        // Ajout du champ nom
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        signupPanel.add(mSignupNameField, gbc);
-
-        // Ajout du label tag
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.fill = GridBagConstraints.NONE;
-        signupPanel.add(tagLabel, gbc);
-
-        // Ajout du champ tag
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        signupPanel.add(mSignupTagField, gbc);
-
-        // Ajout du label password
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.NONE;
-        signupPanel.add(passwordLabel, gbc);
-
-        // Ajout du champ password
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        signupPanel.add(mSignupPasswordField, gbc);
-
-        // Ajout du label avatar
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.fill = GridBagConstraints.NONE;
-        signupPanel.add(avatarLabel, gbc);
+        // Ajout des composants au panel
+        signupPanel.add(nameLabel, 0, 0);
+        signupPanel.add(mSignupNameField, 0, 1);
+        signupPanel.add(tagLabel, 0, 2);
+        signupPanel.add(mSignupTagField, 0, 3);
+        signupPanel.add(passwordLabel, 0, 4);
+        signupPanel.add(mSignupPasswordField, 0, 5);
+        signupPanel.add(avatarLabel, 0, 6);
 
         // Panel pour avatar avec bouton et label
-        JPanel avatarPanel = new JPanel(new BorderLayout(5, 0));
-        avatarPanel.add(mAvatarButton, BorderLayout.WEST);
-        avatarPanel.add(mAvatarLabel, BorderLayout.CENTER);
+        HBox avatarPanel = new HBox(10);
+        avatarPanel.getChildren().addAll(mAvatarButton, mAvatarLabel);
+        signupPanel.add(avatarPanel, 0, 7);
+        signupPanel.add(mAvatarImageView, 0, 8);
 
-        // Ajout du panel avatar
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        signupPanel.add(avatarPanel, gbc);
+        // Conteneur pour centrer le bouton
+        HBox buttonBox = new HBox();
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.getChildren().add(mSignupButton);
+        buttonBox.setPadding(new Insets(20, 0, 0, 0));
 
-        // Ajout du bouton d'inscription
-        gbc.gridx = 0;
-        gbc.gridy = 8;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(20, 5, 5, 5);
-        signupPanel.add(mSignupButton, gbc);
+        signupPanel.add(buttonBox, 0, 9);
 
         return signupPanel;
     }
@@ -284,7 +263,7 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
      */
     protected void login() {
         String userTag = mLoginUserTagField.getText().trim();
-        String password = new String(mLoginPasswordField.getPassword());
+        String password = mLoginPasswordField.getText();
 
         if (mActionListener != null) {
             mActionListener.onLoginRequested(userTag, password);
@@ -297,8 +276,7 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
     protected void signup() {
         String name = mSignupNameField.getText().trim();
         String tag = mSignupTagField.getText().trim();
-        String password = new String(mSignupPasswordField.getPassword());
-        String avatarPath = mAvatarLabel.getToolTipText();
+        String password = mSignupPasswordField.getText();
 
         // Vérification des champs obligatoires
         if (name.isEmpty() || tag.isEmpty() || password.isEmpty()) {
@@ -307,12 +285,10 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
         }
 
         // Si l'avatar n'est pas sélectionné, envoyer une chaîne vide
+        String avatarPath = mAvatarPath;
         if (avatarPath == null) {
             avatarPath = "";
         }
-
-        AvatarUtils.displayAvatar(mAvatarLabel, "", 150, "?");
-
 
         if (mActionListener != null) {
             mActionListener.onSignupRequested(name, tag, password, avatarPath);
@@ -326,32 +302,46 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
 
     @Override
     public void resetLoginFields() {
-        mLoginUserTagField.setText("");
-        mLoginPasswordField.setText("");
+        // L'accès aux composants JavaFX doit se faire sur le thread JavaFX
+        Platform.runLater(() -> {
+            mLoginUserTagField.setText("");
+            mLoginPasswordField.setText("");
+        });
     }
 
     @Override
     public void resetSignupFields() {
-        mSignupNameField.setText("");
-        mSignupTagField.setText("");
-        mSignupPasswordField.setText("");
-        mAvatarLabel.setText("Aucun avatar sélectionné");
+        // L'accès aux composants JavaFX doit se faire sur le thread JavaFX
+        Platform.runLater(() -> {
+            mSignupNameField.setText("");
+            mSignupTagField.setText("");
+            mSignupPasswordField.setText("");
+            mAvatarLabel.setText("Aucun avatar sélectionné");
+            mAvatarImageView.setImage(null);
+            mAvatarPath = null;
+        });
     }
 
     @Override
     public void updateAvatarPath(String avatarPath) {
         if (avatarPath != null && !avatarPath.isEmpty()) {
             // Affichage du nom de fichier
-            String fileName = avatarPath.substring(avatarPath.lastIndexOf(System.getProperty("file.separator")) + 1);
+            String fileName = avatarPath.substring(avatarPath.lastIndexOf(File.separator) + 1);
             mAvatarLabel.setText(fileName);
+
+            // Affichage de l'image
+            try {
+                File file = new File(avatarPath);
+                Image image = new Image(file.toURI().toString());
+                mAvatarImageView.setImage(image);
+            } catch (Exception e) {
+                mAvatarImageView.setImage(null);
+                System.err.println("Erreur lors du chargement de l'image: " + e.getMessage());
+            }
         } else {
             mAvatarLabel.setText("Aucun avatar sélectionné");
+            mAvatarImageView.setImage(null);
         }
-    }
-
-    @Override
-    public void init() {
-        // Rien à faire
     }
 
     public void setActionListener(ILoginViewActionListener listener) {
@@ -360,8 +350,29 @@ public class LoginView extends AbstractComponent implements ILoginView, ICompone
 
     @Override
     public void notifyLogoutError() {
-        showError("Erreur de session",
-                "Un problème est survenu lors de la déconnexion. " +
-                        "Veuillez redémarrer l'application si vous rencontrez des problèmes.");
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(
+                    mMainPanel,
+                    "Un problème est survenu lors de la déconnexion. " +
+                            "Veuillez redémarrer l'application si vous rencontrez des problèmes.",
+                    "Erreur de session",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        });
+    }
+
+    /**
+     * Affiche une boîte de dialogue d'erreur
+     */
+    public void showError(String title, String message) {
+        // Utiliser SwingUtilities pour afficher la boîte de dialogue Swing
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(
+                    mMainPanel,
+                    message,
+                    title,
+                    JOptionPane.ERROR_MESSAGE
+            );
+        });
     }
 }

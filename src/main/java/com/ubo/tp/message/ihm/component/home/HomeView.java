@@ -1,12 +1,34 @@
 package main.java.com.ubo.tp.message.ihm.component.home;
 
-import java.awt.*;
-import java.awt.event.ActionListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Image;
 import java.io.File;
 
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
 
 import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.User;
@@ -15,15 +37,19 @@ import main.java.com.ubo.tp.message.ihm.NotificationManager;
 import main.java.com.ubo.tp.message.ihm.component.IView;
 
 /**
- * Classe de la vue d'accueil de l'application.
+ * Classe de la vue d'accueil de l'application en hybride Swing/JavaFX.
  */
 public class HomeView extends JPanel implements IView {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Panel JavaFX embarqué dans Swing
+     */
+    protected JFXPanel jfxPanel;
 
     /**
-     *
+     * Écouteur d'actions
      */
     private IHomeViewActionListener mActionListener;
 
@@ -37,35 +63,18 @@ public class HomeView extends JPanel implements IView {
      */
     protected MessageApp mMessageApp;
 
-    /**
-     * Panneau d'informations utilisateur
-     */
-    protected JPanel mUserInfoPanel;
+    // Composants JavaFX
+    protected VBox mUserInfoPanel;
+    protected Label mUserNameLabel;
+    protected Label mUserTagLabel;
+    protected ImageView mAvatarImageView;
+    protected Circle mAvatarCircle;
+    protected Label mAvatarFallbackLabel;
+    protected StackPane mAvatarContainer;
 
-    /**
-     * Étiquette du nom d'utilisateur
-     */
-    protected JLabel mUserNameLabel;
-
-    /**
-     * Carte pour accéder aux messages
-     */
-    protected JPanel mMessagesCard;
-
-    /**
-     * Carte pour accéder aux utilisateurs
-     */
-    protected JLabel mUnreadBadgeLabel;
-
-    /**
-     * Étiquette du tag utilisateur
-     */
-    protected JLabel mUserTagLabel;
-
-    /**
-     * Label pour l'avatar
-     */
-    protected JLabel mAvatarLabel;
+    // Badge de messages non lus
+    protected Label mUnreadBadgeLabel;
+    protected StackPane messagesCardWithBadge;
 
     /**
      * Constructeur.
@@ -79,7 +88,6 @@ public class HomeView extends JPanel implements IView {
         this.initComponents();
     }
 
-
     public void setActionListener(IHomeViewActionListener listener) {
         this.mActionListener = listener;
     }
@@ -88,153 +96,146 @@ public class HomeView extends JPanel implements IView {
      * Initialisation des composants graphiques de la vue
      */
     protected void initComponents() {
-        // Configuration du layout
-        this.setLayout(new BorderLayout(20, 20));
-        this.setBorder(new EmptyBorder(30, 30, 30, 30));
-        this.setBackground(new Color(245, 245, 250)); // Fond légèrement gris bleuté
+        // Configuration du layout Swing
+        this.setLayout(new BorderLayout());
+
+        // Création du panel JavaFX
+        jfxPanel = new JFXPanel();
+        this.add(jfxPanel, BorderLayout.CENTER);
+
+        // Initialiser le contenu JavaFX sur le thread JavaFX
+        Platform.runLater(() -> createJavaFXContent());
+
+        // Enregistrer l'écouteur pour les messages non lus
+        NotificationManager.getInstance().addListener(this::updateUnreadBadge);
+    }
+
+    /**
+     * Création du contenu JavaFX
+     */
+    private void createJavaFXContent() {
+        // Création du panel principal
+        BorderPane mainPane = new BorderPane();
+        mainPane.setPadding(new Insets(30));
+        mainPane.setStyle("-fx-background-color: #F5F5FA;"); // Fond légèrement gris bleuté
 
         // En-tête avec le logo et le titre
-        JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.X_AXIS));
-        headerPanel.setOpaque(false);
+        HBox headerBox = new HBox(20);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
 
         // Logo de l'application
-        JLabel logoLabel = new JLabel();
-        try {
-            java.net.URL resourceURL = getClass().getResource("/images/logo_message.png");
-            if (resourceURL != null) {
-                ImageIcon originalIcon = new ImageIcon(resourceURL);
-                Image img = originalIcon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
-                logoLabel.setIcon(new ImageIcon(img));
-            } else {
-                logoLabel.setText("*logo*");
-                logoLabel.setFont(new Font("Arial", Font.BOLD, 24));
-                System.err.println("Resource not found: /images/logo_message.png");
-            }
-        } catch (Exception e) {
-            logoLabel.setText("*logo*");
-            logoLabel.setFont(new Font("Arial", Font.BOLD, 24));
-            System.err.println("Error loading icon: " + e.getMessage());
+        ImageView logoImageView = createImageView("/images/logo_message.png", 64, 64);
+        if (logoImageView == null) {
+            Label logoLabel = new Label("*logo*");
+            logoLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+            headerBox.getChildren().add(logoLabel);
+        } else {
+            headerBox.getChildren().add(logoImageView);
         }
 
         // Titre de l'application
-        JLabel titleLabel = new JLabel("Bienvenue sur MessageApp");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        Label titleLabel = new Label("Bienvenue sur MessageApp");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+        headerBox.getChildren().add(titleLabel);
 
-        // Assemblage de l'en-tête
-        headerPanel.add(logoLabel);
-        headerPanel.add(Box.createHorizontalStrut(20));
-        headerPanel.add(titleLabel);
-        headerPanel.add(Box.createHorizontalGlue());
+        // Espace flexible pour pousser le panel utilisateur à droite
+        HBox.setHgrow(createSpacer(), Priority.ALWAYS);
+        headerBox.getChildren().add(createSpacer());
 
         // Panel d'informations utilisateur (visible uniquement lorsqu'un utilisateur est connecté)
-        mUserInfoPanel = new JPanel();
-        mUserInfoPanel.setLayout(new BoxLayout(mUserInfoPanel, BoxLayout.Y_AXIS));
-        mUserInfoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 255), 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-        mUserInfoPanel.setBackground(new Color(240, 240, 255));
+        mUserInfoPanel = new VBox(10);
+        mUserInfoPanel.setAlignment(Pos.CENTER);
+        mUserInfoPanel.setPadding(new Insets(10));
+        mUserInfoPanel.setStyle("-fx-background-color: #F0F0FF; -fx-border-color: #C8C8FF; -fx-border-width: 1; -fx-border-radius: 5;");
 
         // Avatar de l'utilisateur
-        mAvatarLabel = new JLabel();
-        mAvatarLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mAvatarLabel.setPreferredSize(new Dimension(80, 80));
-        mAvatarLabel.setMinimumSize(new Dimension(80, 80));
-        mAvatarLabel.setMaximumSize(new Dimension(80, 80));
+        mAvatarContainer = new StackPane();
+        mAvatarContainer.setMinSize(80, 80);
+        mAvatarContainer.setMaxSize(80, 80);
+
+        mAvatarCircle = new Circle(40);
+        mAvatarCircle.setFill(Color.LIGHTGRAY);
+
+        mAvatarImageView = new ImageView();
+        mAvatarImageView.setFitWidth(80);
+        mAvatarImageView.setFitHeight(80);
+        mAvatarImageView.setPreserveRatio(true);
+
+        mAvatarFallbackLabel = new Label("?");
+        mAvatarFallbackLabel.setFont(Font.font("Arial", FontWeight.BOLD, 36));
+        mAvatarFallbackLabel.setTextFill(Color.DARKGRAY);
+
+        mAvatarContainer.getChildren().addAll(mAvatarCircle, mAvatarImageView, mAvatarFallbackLabel);
 
         // Nom de l'utilisateur
-        mUserNameLabel = new JLabel("Nom d'utilisateur");
-        mUserNameLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        mUserNameLabel.setAlignmentX(CENTER_ALIGNMENT);
+        mUserNameLabel = new Label("Nom d'utilisateur");
+        mUserNameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
 
         // Tag de l'utilisateur
-        mUserTagLabel = new JLabel("@tag");
-        mUserTagLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-        mUserTagLabel.setForeground(Color.DARK_GRAY);
-        mUserTagLabel.setAlignmentX(CENTER_ALIGNMENT);
+        mUserTagLabel = new Label("@tag");
+        mUserTagLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 14));
+        mUserTagLabel.setTextFill(Color.DARKGRAY);
 
         // Assemblage du panel utilisateur
-        mUserInfoPanel.add(mAvatarLabel);
-        mUserInfoPanel.add(Box.createVerticalStrut(10));
-        mUserInfoPanel.add(mUserNameLabel);
-        mUserInfoPanel.add(Box.createVerticalStrut(5));
-        mUserInfoPanel.add(mUserTagLabel);
+        mUserInfoPanel.getChildren().addAll(mAvatarContainer, mUserNameLabel, mUserTagLabel);
 
         // Masquer initialement le panel utilisateur
         mUserInfoPanel.setVisible(false);
 
         // Ajout du panel utilisateur à l'en-tête
-        headerPanel.add(mUserInfoPanel);
+        headerBox.getChildren().add(mUserInfoPanel);
 
         // Ajout de l'en-tête au panel principal
-        this.add(headerPanel, BorderLayout.NORTH);
+        mainPane.setTop(headerBox);
 
         // Panel central avec les cartes de navigation
-        JPanel navigationPanel = new JPanel(new GridLayout(2, 2, 20, 20));
-        navigationPanel.setOpaque(false);
+        GridPane navigationGrid = new GridPane();
+        navigationGrid.setHgap(20);
+        navigationGrid.setVgap(20);
+        navigationGrid.setAlignment(Pos.CENTER);
 
         // Carte pour accéder au profil
-        JPanel profileCard = createNavigationCard(
+        VBox profileCard = createNavigationCard(
                 "Mon Profil",
                 "Consultez et modifiez votre profil utilisateur",
-                "/main/resources/images/user.png",
-                e -> {
+                "/images/user.png",
+                () -> {
                     if (mActionListener != null) {
                         mActionListener.onShowProfileRequested();
                     }
                 }
         );
 
-        // Carte pour accéder aux messages
-        JPanel messagesCard = createNavigationCard(
+        // Carte pour accéder aux messages avec badge
+        VBox messagesCard = createNavigationCard(
                 "Messages",
                 "Consultez et envoyez des messages",
-                "/main/resources/images/message.png",
-                e -> {
+                "/images/message.png",
+                () -> {
                     if (mActionListener != null) {
                         mActionListener.onShowMessagesRequested();
                     }
                 }
         );
 
-        JPanel badgeContainer = new JPanel(new BorderLayout());
-        badgeContainer.setOpaque(false);
-        badgeContainer.add(messagesCard, BorderLayout.CENTER);
-
         // Créer le badge pour les messages non lus
-        mUnreadBadgeLabel = new JLabel("0");
-        mUnreadBadgeLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        mUnreadBadgeLabel.setForeground(Color.WHITE);
-        mUnreadBadgeLabel.setBackground(Color.RED);
-        mUnreadBadgeLabel.setOpaque(true);
-        mUnreadBadgeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mUnreadBadgeLabel.setVerticalAlignment(SwingConstants.CENTER);
-        mUnreadBadgeLabel.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        mUnreadBadgeLabel = new Label("0");
+        mUnreadBadgeLabel.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 10;");
+        mUnreadBadgeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         mUnreadBadgeLabel.setVisible(false); // Masqué par défaut
 
-        // Créer un panel pour positionner le badge en haut à droite
-        JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
-        badgePanel.setOpaque(false);
-        badgePanel.add(mUnreadBadgeLabel);
-
-
-        // Ajouter le badge en position NORTH dans le container
-        badgeContainer.add(badgePanel, BorderLayout.NORTH);
-
-        // Stocker la référence
-        this.mMessagesCard = badgeContainer;
-
-        // Ajouter un écouteur pour mettre à jour le badge
-        NotificationManager.getInstance().addListener(this::updateUnreadBadge);
-
+        // Créer un container pour positionner le badge en haut à droite
+        messagesCardWithBadge = new StackPane();
+        messagesCardWithBadge.getChildren().add(messagesCard);
+        StackPane.setAlignment(mUnreadBadgeLabel, Pos.TOP_RIGHT);
+        messagesCardWithBadge.getChildren().add(mUnreadBadgeLabel);
 
         // Carte pour accéder à la liste des utilisateurs
-        JPanel usersCard = createNavigationCard(
+        VBox usersCard = createNavigationCard(
                 "Utilisateurs",
                 "Consultez la liste des utilisateurs et gérez vos abonnements",
-                "/main/resources/images/logo_20.png",
-                e -> {
+                "/images/logo_20.png",
+                () -> {
                     if (mActionListener != null) {
                         mActionListener.onShowUserListRequested();
                     }
@@ -242,11 +243,11 @@ public class HomeView extends JPanel implements IView {
         );
 
         // Carte pour se déconnecter
-        JPanel logoutCard = createNavigationCard(
+        VBox logoutCard = createNavigationCard(
                 "Déconnexion",
                 "Déconnectez-vous de votre compte",
-                "/main/resources/images/logout.png",
-                e -> {
+                "/images/logout.png",
+                () -> {
                     if (mActionListener != null) {
                         mActionListener.onLogoutRequested();
                     }
@@ -254,22 +255,37 @@ public class HomeView extends JPanel implements IView {
         );
 
         // Ajout des cartes au panel de navigation
-        navigationPanel.add(profileCard);
-        navigationPanel.add(badgeContainer);
-        navigationPanel.add(usersCard);
-        navigationPanel.add(logoutCard);
+        navigationGrid.add(profileCard, 0, 0);
+        navigationGrid.add(messagesCardWithBadge, 1, 0);
+        navigationGrid.add(usersCard, 0, 1);
+        navigationGrid.add(logoutCard, 1, 1);
 
         // Ajout du panel de navigation au panel principal
-        this.add(navigationPanel, BorderLayout.CENTER);
+        mainPane.setCenter(navigationGrid);
 
         // Pied de page
-        JLabel footerLabel = new JLabel("© 2025 MessageApp - M2-TIIL UBO", SwingConstants.CENTER);
-        footerLabel.setFont(new Font("Arial", Font.ITALIC, 12));
-        footerLabel.setForeground(Color.GRAY);
-        footerLabel.setBorder(new EmptyBorder(20, 0, 0, 0));
+        Label footerLabel = new Label("© 2025 MessageApp - M2-TIIL UBO");
+        footerLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 12));
+        footerLabel.setTextFill(Color.GRAY);
+        footerLabel.setPadding(new Insets(20, 0, 0, 0));
+        footerLabel.setAlignment(Pos.CENTER);
+        footerLabel.setMaxWidth(Double.MAX_VALUE);
 
         // Ajout du pied de page au panel principal
-        this.add(footerLabel, BorderLayout.SOUTH);
+        mainPane.setBottom(footerLabel);
+
+        // Création de la scène JavaFX
+        Scene scene = new Scene(mainPane);
+        jfxPanel.setScene(scene);
+    }
+
+    /**
+     * Crée un espace flexible
+     */
+    private javafx.scene.Node createSpacer() {
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        return spacer;
     }
 
     /**
@@ -278,67 +294,92 @@ public class HomeView extends JPanel implements IView {
      * @param title Titre de la carte
      * @param description Description de la carte
      * @param iconPath Chemin vers l'icône
-     * @param actionListener Action à exécuter au clic
+     * @param action Action à exécuter au clic
      * @return Une carte de navigation
      */
-    protected JPanel createNavigationCard(String title, String description, String iconPath, ActionListener actionListener) {
-        JPanel card = new JPanel();
-        card.setLayout(new BorderLayout(10, 10));
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 255), 1),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
-        card.setBackground(Color.WHITE);
+    protected VBox createNavigationCard(String title, String description, String iconPath, Runnable action) {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(15));
+        card.setStyle("-fx-background-color: white; -fx-border-color: #C8C8FF; -fx-border-width: 1; -fx-border-radius: 5;");
+        card.setMinWidth(250);
+        card.setMinHeight(180);
 
-        // Titre de la carte
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
-
-        // Description de la carte
-        JLabel descLabel = new JLabel("<html>" + description + "</html>");
-        descLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        // Panel pour le texte
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false);
-        textPanel.add(titleLabel);
-        textPanel.add(Box.createVerticalStrut(10));
-        textPanel.add(descLabel);
+        // En-tête avec icône et titre
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
 
         // Icône de la carte
-        JLabel iconLabel = new JLabel();
+        ImageView iconView = createImageView(iconPath, 48, 48);
+        if (iconView == null) {
+            Label iconPlaceholder = new Label("");
+            iconPlaceholder.setMinWidth(48);
+            header.getChildren().add(iconPlaceholder);
+        } else {
+            header.getChildren().add(iconView);
+        }
+
+        // Titre de la carte
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        header.getChildren().add(titleLabel);
+
+        // Description de la carte
+        Label descLabel = new Label(description);
+        descLabel.setFont(Font.font("Arial", 14));
+        descLabel.setWrapText(true);
+
+        // Bouton pour activer la carte
+        Button actionButton = new Button("Accéder");
+        actionButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        actionButton.setStyle("-fx-background-color: #E6E6FA; -fx-text-fill: #323264;");
+        actionButton.setOnAction(e -> action.run());
+        actionButton.setMaxWidth(Double.MAX_VALUE);
+
+        // Espace flexible pour pousser le bouton vers le bas
+        VBox.setVgrow(createVerticalSpacer(), Priority.ALWAYS);
+
+        // Assemblage de la carte
+        card.getChildren().addAll(header, descLabel, createVerticalSpacer(), actionButton);
+
+        return card;
+    }
+
+    /**
+     * Crée un espace vertical flexible
+     */
+    private javafx.scene.Node createVerticalSpacer() {
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+        return spacer;
+    }
+
+    /**
+     * Crée un ImageView à partir d'un chemin de ressource
+     */
+    private ImageView createImageView(String resourcePath, int width, int height) {
         try {
-            String correctedPath = iconPath.replace("/main/resources", "");
+            String correctedPath = resourcePath;
+            if (!correctedPath.startsWith("/")) {
+                correctedPath = "/" + correctedPath;
+            }
+
             java.net.URL resourceURL = getClass().getResource(correctedPath);
 
             if (resourceURL != null) {
-                ImageIcon originalIcon = new ImageIcon(resourceURL);
-                Image img = originalIcon.getImage().getScaledInstance(48, 48, Image.SCALE_SMOOTH);
-                iconLabel.setIcon(new ImageIcon(img));
+                javafx.scene.image.Image image = new javafx.scene.image.Image(resourceURL.toExternalForm(), width, height, true, true);
+                ImageView imageView = new ImageView(image);
+                imageView.setFitWidth(width);
+                imageView.setFitHeight(height);
+                imageView.setPreserveRatio(true);
+                return imageView;
             } else {
-                System.err.println("Resource not found: " + iconPath);
-                iconLabel.setText("");
+                System.err.println("Resource not found: " + resourcePath);
+                return null;
             }
         } catch (Exception e) {
             System.err.println("Error loading icon: " + e.getMessage());
-            iconLabel.setText("");
+            return null;
         }
-        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        iconLabel.setPreferredSize(new Dimension(60, 60));
-
-        // Bouton pour activer la carte
-        JButton actionButton = new JButton("Accéder");
-        actionButton.addActionListener(actionListener);
-        actionButton.setFont(new Font("Arial", Font.BOLD, 14));
-        actionButton.setBackground(new Color(230, 230, 250));
-        actionButton.setForeground(new Color(50, 50, 100));
-
-        // Assemblage de la carte
-        card.add(iconLabel, BorderLayout.WEST);
-        card.add(textPanel, BorderLayout.CENTER);
-        card.add(actionButton, BorderLayout.SOUTH);
-
-        return card;
     }
 
     /**
@@ -347,51 +388,43 @@ public class HomeView extends JPanel implements IView {
      * @param user Utilisateur connecté
      */
     public void updateUserInfo(User user) {
-        if (user != null) {
-            // Mise à jour du nom
-            mUserNameLabel.setText(user.getName());
+        Platform.runLater(() -> {
+            if (user != null) {
+                // Mise à jour du nom
+                mUserNameLabel.setText(user.getName());
 
-            // Mise à jour du tag
-            mUserTagLabel.setText("@" + user.getUserTag());
+                // Mise à jour du tag
+                mUserTagLabel.setText("@" + user.getUserTag());
 
-            // Mise à jour de l'avatar
-            if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-                File avatarFile = new File(user.getAvatarPath());
-                if (avatarFile.exists()) {
-                    try {
-                        ImageIcon originalIcon = new ImageIcon(user.getAvatarPath());
-                        Image img = originalIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
-                        mAvatarLabel.setIcon(new ImageIcon(img));
-                        mAvatarLabel.setText("");
-                    } catch (Exception e) {
-                        mAvatarLabel.setIcon(null);
-                        mAvatarLabel.setText("?");
-                        mAvatarLabel.setFont(new Font("Arial", Font.BOLD, 36));
-                        mAvatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                // Mise à jour de l'avatar
+                if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
+                    File avatarFile = new File(user.getAvatarPath());
+                    if (avatarFile.exists()) {
+                        try {
+                            javafx.scene.image.Image avatar = new javafx.scene.image.Image(avatarFile.toURI().toString(),
+                                    80, 80, true, true);
+                            mAvatarImageView.setImage(avatar);
+                            mAvatarFallbackLabel.setVisible(false);
+                        } catch (Exception e) {
+                            mAvatarImageView.setImage(null);
+                            mAvatarFallbackLabel.setVisible(true);
+                        }
+                    } else {
+                        mAvatarImageView.setImage(null);
+                        mAvatarFallbackLabel.setVisible(true);
                     }
                 } else {
-                    mAvatarLabel.setIcon(null);
-                    mAvatarLabel.setText("?");
-                    mAvatarLabel.setFont(new Font("Arial", Font.BOLD, 36));
-                    mAvatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    mAvatarImageView.setImage(null);
+                    mAvatarFallbackLabel.setVisible(true);
                 }
+
+                // Afficher le panel utilisateur
+                mUserInfoPanel.setVisible(true);
             } else {
-                mAvatarLabel.setIcon(null);
-                mAvatarLabel.setText("?");
-                mAvatarLabel.setFont(new Font("Arial", Font.BOLD, 36));
-                mAvatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                // Masquer le panel utilisateur si aucun utilisateur n'est connecté
+                mUserInfoPanel.setVisible(false);
             }
-
-            // Afficher le panel utilisateur
-            mUserInfoPanel.setVisible(true);
-        } else {
-            // Masquer le panel utilisateur si aucun utilisateur n'est connecté
-            mUserInfoPanel.setVisible(false);
-        }
-
-        // Forcer le rafraîchissement
-        this.revalidate();
-        this.repaint();
+        });
     }
 
     @Override
@@ -404,21 +437,13 @@ public class HomeView extends JPanel implements IView {
      * @param count nombre de messages non lus
      */
     protected void updateUnreadBadge(final int count) {
-        // Exécuter dans le thread EDT pour garantir la sécurité des composants Swing
-        SwingUtilities.invokeLater(() -> {
+        Platform.runLater(() -> {
             if (count > 0) {
                 mUnreadBadgeLabel.setText(String.valueOf(count));
                 mUnreadBadgeLabel.setVisible(true);
             } else {
                 mUnreadBadgeLabel.setVisible(false);
             }
-
-            // Forcer le rafraîchissement de l'interface
-            if (mMessagesCard != null) {
-                mMessagesCard.revalidate();
-                mMessagesCard.repaint();
-            }
         });
     }
-
 }

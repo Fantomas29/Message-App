@@ -1,17 +1,7 @@
 package main.java.com.ubo.tp.message.ihm.component.userlist;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,65 +9,88 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
+
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
-import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
 
 /**
- * Vue de la liste des utilisateurs enregistrés
+ * Vue de la liste des utilisateurs enregistrés en JavaFX
  */
 public class UserListView extends AbstractComponent implements IUserListView {
 
     /**
-     * Hauteur d'une vignette utilisateur
-     */
-    protected static final int USER_PANEL_HEIGHT = 80;
-    /**
-     * Hauteur de l'avatar
+     * Taille de l'avatar
      */
     protected static final int AVATAR_SIZE = 60;
+
     /**
-     * Panel principal
+     * Panel principal Swing
      */
     protected JPanel mMainPanel;
+
     /**
-     * Panel contenant la liste des utilisateurs
+     * Panel JavaFX
      */
-    protected JPanel mUsersPanel;
+    protected JFXPanel jfxPanel;
+
     /**
      * Champ de recherche
      */
-    protected JTextField mSearchField;
+    protected TextField mSearchField;
+
+    /**
+     * Container JavaFX pour la liste des utilisateurs
+     */
+    protected VBox mUsersContainer;
+
     /**
      * Liste des utilisateurs affichés
      */
     protected List<User> mDisplayedUsers;
+
     /**
      * Map pour stocker les boutons de suivi par utilisateur
      */
     protected Map<UUID, UserFollowButtons> mUserButtons;
+
     /**
      * Contrôleur de la vue
      */
     private IUserListViewActionListener mActionListener;
 
     /**
-     * Constructeur.
+     * Constructeur
      */
     public UserListView() {
         this.mDisplayedUsers = new ArrayList<>();
@@ -91,195 +104,291 @@ public class UserListView extends AbstractComponent implements IUserListView {
      * Initialise les composants graphiques
      */
     protected void initComponents() {
-        // Panel principal
-        mMainPanel = new JPanel(new BorderLayout(0, 0));
-        mMainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Configuration du layout Swing
+        mMainPanel = new JPanel(new BorderLayout());
 
-        // Titre
-        JLabel titleLabel = new JLabel("Liste des utilisateurs");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        // Création du panel JavaFX
+        jfxPanel = new JFXPanel();
+        mMainPanel.add(jfxPanel, BorderLayout.CENTER);
 
-        // Bouton Page d'accueil
-        JButton homeButton = new JButton("Page d'accueil");
-        homeButton.setPreferredSize(new Dimension(150, 30));
-        homeButton.setBackground(new Color(230, 230, 250));
-        homeButton.setForeground(new Color(50, 50, 100));
-        homeButton.setFont(new Font("Arial", Font.BOLD, 12));
-        homeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Émission d'un événement pour retourner à la page d'accueil
-                EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
-            }
-        });
-
-        // Panel pour le titre et le bouton
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel, BorderLayout.CENTER);
-        topPanel.add(homeButton, BorderLayout.EAST);
-
-        // Panel pour la liste des utilisateurs
-        mUsersPanel = new JPanel();
-        mUsersPanel.setLayout(new BoxLayout(mUsersPanel, BoxLayout.Y_AXIS));
-
-        // Scroll pane VERTICAL uniquement pour la liste des utilisateurs
-        JScrollPane scrollPane = new JScrollPane(mUsersPanel);
-        scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Panel de recherche
-        JPanel searchPanel = createSearchPanel();
-
-        // Ajout des composants au panel principal
-        mMainPanel.add(topPanel, BorderLayout.NORTH);
-        mMainPanel.add(scrollPane, BorderLayout.CENTER);
-        mMainPanel.add(searchPanel, BorderLayout.SOUTH);
+        // Initialiser le contenu JavaFX sur le thread JavaFX
+        Platform.runLater(() -> createJavaFXContent());
     }
 
     /**
-     * Crée le panel de recherche
+     * Création du contenu JavaFX
      */
-    protected JPanel createSearchPanel() {
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        searchPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+    private void createJavaFXContent() {
+        // Panel principal
+        BorderPane mainPane = new BorderPane();
+        mainPane.setPadding(new Insets(10));
+        mainPane.setStyle("-fx-background-color: #f8f9fa;");
 
-        JLabel searchLabel = new JLabel("Rechercher : ");
-        searchLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        // Barre supérieure avec titre et bouton accueil
+        HBox topBar = createTopBar();
+        mainPane.setTop(topBar);
 
-        mSearchField = new JTextField();
-        mSearchField.setPreferredSize(new Dimension(200, 30));
-        mSearchField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (mActionListener != null) {
-                    mActionListener.onSearchUsersRequested(mSearchField.getText().trim());
-                }
+        // Zone de la liste des utilisateurs
+        createUsersListArea(mainPane);
+
+        // Zone de recherche
+        HBox searchBar = createSearchBar();
+        mainPane.setBottom(searchBar);
+
+        // Création de la scène JavaFX
+        Scene scene = new Scene(mainPane);
+        jfxPanel.setScene(scene);
+    }
+
+    /**
+     * Création de la barre supérieure
+     */
+    private HBox createTopBar() {
+        HBox topBar = new HBox();
+        topBar.setPadding(new Insets(0, 0, 10, 0));
+        topBar.setAlignment(Pos.CENTER);
+
+        // Titre
+        Label titleLabel = new Label("Liste des utilisateurs");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.setStyle("-fx-text-fill: #2c3e50;");
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        titleLabel.setAlignment(Pos.CENTER);
+
+        // Bouton Page d'accueil
+        Button homeButton = new Button("Page d'accueil");
+        homeButton.setStyle(
+                "-fx-background-color: #e6e6fa; " +
+                        "-fx-text-fill: #323264; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-font-size: 12px; " +
+                        "-fx-padding: 8px 15px; " +
+                        "-fx-background-radius: 5px;"
+        );
+        homeButton.setOnAction(e -> {
+            // Émission d'un événement pour retourner à la page d'accueil
+            EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
+        });
+
+        topBar.getChildren().addAll(titleLabel, homeButton);
+
+        return topBar;
+    }
+
+    /**
+     * Création de la zone de liste des utilisateurs
+     */
+    private void createUsersListArea(BorderPane parent) {
+        // Container pour les utilisateurs
+        mUsersContainer = new VBox(10);
+        mUsersContainer.setPadding(new Insets(10));
+
+        // ScrollPane pour faire défiler les utilisateurs
+        ScrollPane scrollPane = new ScrollPane(mUsersContainer);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle(
+                "-fx-background: white; " +
+                        "-fx-border-color: #e0e0e0; " +
+                        "-fx-background-color: white; " +
+                        "-fx-border-radius: 5px; " +
+                        "-fx-background-radius: 5px;"
+        );
+
+        parent.setCenter(scrollPane);
+    }
+
+    /**
+     * Création de la barre de recherche
+     */
+    private HBox createSearchBar() {
+        HBox searchBar = new HBox(10);
+        searchBar.setPadding(new Insets(10, 0, 0, 0));
+        searchBar.setAlignment(Pos.CENTER);
+
+        // Label
+        Label searchLabel = new Label("Rechercher : ");
+        searchLabel.setFont(Font.font("Arial", 14));
+
+        // Champ de recherche
+        mSearchField = new TextField();
+        mSearchField.setPrefWidth(200);
+        mSearchField.setStyle("-fx-padding: 5px; -fx-font-size: 14px;");
+
+        // Écouteur pour la recherche en temps réel
+        mSearchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (mActionListener != null) {
+                mActionListener.onSearchUsersRequested(newValue.trim());
             }
         });
 
-        JButton searchButton = new JButton("Rechercher");
-        searchButton.addActionListener(e -> {
+        // Bouton de recherche
+        Button searchButton = new Button("Rechercher");
+        searchButton.setStyle(
+                "-fx-background-color: #f8f9fa; " +
+                        "-fx-text-fill: #495057; " +
+                        "-fx-border-color: #ced4da; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-padding: 5px 10px;"
+        );
+        searchButton.setOnAction(e -> {
             if (mActionListener != null) {
                 mActionListener.onSearchUsersRequested(mSearchField.getText().trim());
             }
         });
 
-        JButton resetButton = new JButton("Réinitialiser");
-        resetButton.addActionListener(e -> {
+        // Bouton de réinitialisation
+        Button resetButton = new Button("Réinitialiser");
+        resetButton.setStyle(
+                "-fx-background-color: #f8f9fa; " +
+                        "-fx-text-fill: #495057; " +
+                        "-fx-border-color: #ced4da; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-padding: 5px 10px;"
+        );
+        resetButton.setOnAction(e -> {
             mSearchField.setText("");
             if (mActionListener != null) {
                 mActionListener.onRefreshUserListRequested();
             }
         });
 
-        searchPanel.add(searchLabel);
-        searchPanel.add(mSearchField);
-        searchPanel.add(searchButton);
-        searchPanel.add(resetButton);
+        searchBar.getChildren().addAll(searchLabel, mSearchField, searchButton, resetButton);
 
-        return searchPanel;
+        return searchBar;
     }
 
     /**
-     * Crée un panel pour un utilisateur avec ses statistiques précalculées
+     * Crée un panel pour un utilisateur avec ses statistiques
      */
-    protected JPanel createUserPanel(User user, int followersCount, int followingCount) {
-        // Utiliser GridBagLayout pour un contrôle précis des composants
-        JPanel userPanel = new JPanel(new GridBagLayout());
-        userPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
-                new EmptyBorder(5, 5, 5, 5)));
-        userPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, USER_PANEL_HEIGHT + 20));
+    protected HBox createUserPanel(User user, int followersCount, int followingCount) {
+        // Panel principal pour l'utilisateur
+        HBox userBox = new HBox(15);
+        userBox.setPadding(new Insets(10));
+        userBox.setStyle(
+                "-fx-background-color: white; " +
+                        "-fx-border-color: #e0e0e0; " +
+                        "-fx-border-width: 0 0 1 0; " +
+                        "-fx-background-radius: 5px;"
+        );
+        userBox.setMinHeight(AVATAR_SIZE + 20);
 
-        // Contraintes pour le layout
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 5, 2, 5);
-        gbc.fill = GridBagConstraints.VERTICAL;
-        gbc.gridheight = 1;
-        gbc.weighty = 1.0;
+        // Avatar avec effet circulaire
+        StackPane avatarPane = new StackPane();
+        avatarPane.setMinSize(AVATAR_SIZE, AVATAR_SIZE);
+        avatarPane.setMaxSize(AVATAR_SIZE, AVATAR_SIZE);
 
-        // Avatar
-        JLabel avatarLabel = new JLabel();
-        avatarLabel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        Circle avatarCircle = new Circle(AVATAR_SIZE / 2);
+        avatarCircle.setFill(Color.LIGHTGRAY);
+
+        // Effet d'ombre pour l'avatar
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setRadius(5.0);
+        dropShadow.setOffsetX(0);
+        dropShadow.setOffsetY(0);
+        dropShadow.setColor(Color.gray(0.5, 0.3));
+        avatarCircle.setEffect(dropShadow);
+
+        ImageView avatarImageView = new ImageView();
+        avatarImageView.setFitWidth(AVATAR_SIZE);
+        avatarImageView.setFitHeight(AVATAR_SIZE);
+        avatarImageView.setPreserveRatio(true);
+
+        // Label de repli pour l'avatar
+        Label avatarFallbackLabel = new Label("?");
+        avatarFallbackLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        avatarFallbackLabel.setStyle("-fx-text-fill: #6c757d;");
 
         // Chargement de l'avatar si disponible
-        AvatarUtils.displayAvatar(avatarLabel, user.getAvatarPath(), AVATAR_SIZE, "?");
+        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
+            File avatarFile = new File(user.getAvatarPath());
+            if (avatarFile.exists()) {
+                try {
+                    Image avatarImage = new Image(avatarFile.toURI().toString(),
+                            AVATAR_SIZE, AVATAR_SIZE, true, true);
+                    avatarImageView.setImage(avatarImage);
+                    avatarImageView.setClip(new Circle(AVATAR_SIZE/2, AVATAR_SIZE/2, AVATAR_SIZE/2));
+                    avatarFallbackLabel.setVisible(false);
+                } catch (Exception e) {
+                    avatarImageView.setImage(null);
+                    avatarFallbackLabel.setVisible(true);
+                }
+            } else {
+                avatarImageView.setImage(null);
+                avatarFallbackLabel.setVisible(true);
+            }
+        } else {
+            avatarImageView.setImage(null);
+            avatarFallbackLabel.setVisible(true);
+        }
 
-        // Ajout de l'avatar
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridheight = 2;
-        gbc.weightx = 0.0;
-        userPanel.add(avatarLabel, gbc);
+        avatarPane.getChildren().addAll(avatarCircle, avatarImageView, avatarFallbackLabel);
 
-        // Informations de l'utilisateur
-        JLabel nameLabel = new JLabel(user.getName());
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        // Informations sur l'utilisateur
+        VBox userInfo = new VBox(5);
+        userInfo.setAlignment(Pos.CENTER_LEFT);
 
-        JLabel tagLabel = new JLabel("@" + user.getUserTag());
-        tagLabel.setFont(new Font("Arial", Font.ITALIC, 12));
-        tagLabel.setForeground(Color.GRAY);
+        // Nom de l'utilisateur
+        Label nameLabel = new Label(user.getName());
+        nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        nameLabel.setStyle("-fx-text-fill: #2c3e50;");
 
-        // Informations sur les followers et abonnements
-        JLabel statsLabel = new JLabel("<html><font color='#666666'>" +
-                followersCount + " abonnés · " +
-                followingCount + " abonnements</font></html>");
-        statsLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        // Tag de l'utilisateur
+        Label tagLabel = new Label("@" + user.getUserTag());
+        tagLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 12));
+        tagLabel.setStyle("-fx-text-fill: #6c757d;");
 
-        // Ajout du nom
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.gridheight = 1;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        userPanel.add(nameLabel, gbc);
+        // Statistiques (followers et following)
+        HBox statsBox = new HBox(10);
 
-        // Ajout du tag
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        userPanel.add(tagLabel, gbc);
+        Label followersLabel = new Label(followersCount + " abonnés");
+        followersLabel.setFont(Font.font("Arial", 11));
+        followersLabel.setStyle("-fx-text-fill: #6c757d;");
 
-        // Ajout des statistiques
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        userPanel.add(statsLabel, gbc);
+        Label followingLabel = new Label(followingCount + " abonnements");
+        followingLabel.setFont(Font.font("Arial", 11));
+        followingLabel.setStyle("-fx-text-fill: #6c757d;");
 
-        // Création des boutons pour suivre/ne plus suivre
-        final JButton followButton = new JButton("Suivre");
-        followButton.setPreferredSize(new Dimension(120, 30));
-        followButton.setFont(new Font("Arial", Font.BOLD, 13));
-        followButton.setBackground(new Color(255, 255, 255));
-        followButton.setForeground(new Color(30, 144, 255));
-        followButton.setOpaque(true);
-        followButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(30, 144, 255), 2),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
+        statsBox.getChildren().addAll(followersLabel, new Label("·"), followingLabel);
 
-        final JButton unfollowButton = new JButton("Ne plus suivre");
-        unfollowButton.setPreferredSize(new Dimension(130, 30));
-        unfollowButton.setFont(new Font("Arial", Font.BOLD, 13));
-        unfollowButton.setBackground(new Color(255, 255, 255));
-        unfollowButton.setForeground(new Color(220, 20, 60));
-        unfollowButton.setOpaque(true);
-        unfollowButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 20, 60), 2),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
+        // Assemblage des infos utilisateur
+        userInfo.getChildren().addAll(nameLabel, tagLabel, statsBox);
+        HBox.setHgrow(userInfo, Priority.ALWAYS);
 
-        // Ajout des écouteurs d'événements
-        followButton.addActionListener(e -> {
+        // Boutons de suivi/non-suivi
+        VBox buttonsBox = new VBox(5);
+        buttonsBox.setAlignment(Pos.CENTER);
+
+        // Bouton Suivre
+        Button followButton = new Button("Suivre");
+        followButton.setStyle(
+                "-fx-background-color: white; " +
+                        "-fx-text-fill: #1e90ff; " +
+                        "-fx-border-color: #1e90ff; " +
+                        "-fx-border-width: 2; " +
+                        "-fx-border-radius: 5; " +
+                        "-fx-padding: 5 15; " +
+                        "-fx-font-weight: bold;"
+        );
+        followButton.setOnAction(e -> {
             if (mActionListener != null) {
                 mActionListener.onFollowUserRequested(user);
             }
         });
 
-        unfollowButton.addActionListener(e -> {
+        // Bouton Ne plus suivre
+        Button unfollowButton = new Button("Ne plus suivre");
+        unfollowButton.setStyle(
+                "-fx-background-color: white; " +
+                        "-fx-text-fill: #dc143c; " +
+                        "-fx-border-color: #dc143c; " +
+                        "-fx-border-width: 2; " +
+                        "-fx-border-radius: 5; " +
+                        "-fx-padding: 5 15; " +
+                        "-fx-font-weight: bold;"
+        );
+        unfollowButton.setOnAction(e -> {
             if (mActionListener != null) {
                 mActionListener.onUnfollowUserRequested(user);
             }
@@ -289,75 +398,63 @@ public class UserListView extends AbstractComponent implements IUserListView {
         followButton.setVisible(false);
         unfollowButton.setVisible(false);
 
-        // Ajout du bouton Suivre
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.gridheight = 2;
-        gbc.weightx = 0.0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.CENTER;
-        userPanel.add(followButton, gbc);
-
-        // Ajout du bouton Ne plus suivre
-        gbc.gridx = 3;
-        userPanel.add(unfollowButton, gbc);
+        buttonsBox.getChildren().addAll(followButton, unfollowButton);
 
         // Stocker les boutons pour cet utilisateur
         mUserButtons.put(user.getUuid(), new UserFollowButtons(followButton, unfollowButton));
 
-        return userPanel;
+        // Assemblage du panel utilisateur
+        userBox.getChildren().addAll(avatarPane, userInfo, buttonsBox);
+
+        return userBox;
     }
 
     @Override
     public void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap, Map<UUID, Integer> followingCountMap) {
-        // Vider la liste actuelle
-        mUsersPanel.removeAll();
-        mDisplayedUsers.clear();
-        mUserButtons.clear();
+        Platform.runLater(() -> {
+            // Vider la liste actuelle
+            mUsersContainer.getChildren().clear();
+            mDisplayedUsers.clear();
+            mUserButtons.clear();
 
-        // Utiliser un Map pour éliminer les doublons par UUID
-        Map<UUID, User> uniqueUsers = new HashMap<>();
+            // Utiliser un Map pour éliminer les doublons par UUID
+            Map<UUID, User> uniqueUsers = new HashMap<>();
 
-        // Ajouter les nouveaux utilisateurs (en éliminant les doublons)
-        for (User user : users) {
-            // Ne pas afficher l'utilisateur "inconnu"
-            if (user.getUuid().equals(main.java.com.ubo.tp.message.common.Constants.UNKNONWN_USER_UUID)) {
-                continue;
+            // Ajouter les nouveaux utilisateurs (en éliminant les doublons)
+            for (User user : users) {
+                // Ne pas afficher l'utilisateur "inconnu"
+                if (user.getUuid().equals(main.java.com.ubo.tp.message.common.Constants.UNKNONWN_USER_UUID)) {
+                    continue;
+                }
+
+                // S'assurer que l'utilisateur n'est pas déjà ajouté (par UUID)
+                uniqueUsers.put(user.getUuid(), user);
             }
 
-            // S'assurer que l'utilisateur n'est pas déjà ajouté (par UUID)
-            uniqueUsers.put(user.getUuid(), user);
-        }
+            // Ajouter les utilisateurs uniques à l'affichage
+            for (User user : uniqueUsers.values()) {
+                // Récupérer le nombre de followers et following depuis les maps
+                int followersCount = followersCountMap.getOrDefault(user.getUuid(), 0);
+                int followingCount = followingCountMap.getOrDefault(user.getUuid(), 0);
 
-        // Ajouter les utilisateurs uniques à l'affichage
-        for (User user : uniqueUsers.values()) {
-            // Récupérer le nombre de followers et following depuis les maps
-            int followersCount = followersCountMap.getOrDefault(user.getUuid(), 0);
-            int followingCount = followingCountMap.getOrDefault(user.getUuid(), 0);
+                mDisplayedUsers.add(user);
+                HBox userPanel = createUserPanel(user, followersCount, followingCount);
+                mUsersContainer.getChildren().add(userPanel);
+            }
 
-            mDisplayedUsers.add(user);
-            JPanel userPanel = createUserPanel(user, followersCount, followingCount);
-            mUsersPanel.add(userPanel);
-        }
+            // Si aucun utilisateur
+            if (mDisplayedUsers.isEmpty()) {
+                VBox emptyBox = new VBox();
+                emptyBox.setAlignment(Pos.CENTER);
+                emptyBox.setPadding(new Insets(30));
 
-        // Si aucun utilisateur
-        if (mDisplayedUsers.isEmpty()) {
-            JLabel emptyLabel = new JLabel("Aucun utilisateur trouvé", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-            mUsersPanel.add(emptyLabel);
-        }
+                Label emptyLabel = new Label("Aucun utilisateur trouvé");
+                emptyLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 14));
+                emptyLabel.setStyle("-fx-text-fill: #6c757d;");
 
-        // Ajouter un panel vide à la fin pour éviter que le dernier utilisateur ne soit étiré
-        mUsersPanel.add(Box.createVerticalGlue());
-
-        // Forcer la mise à jour de l'affichage
-        mUsersPanel.revalidate();
-        mUsersPanel.repaint();
-
-        // Force à redessiner tout après un petit délai
-        SwingUtilities.invokeLater(() -> {
-            mMainPanel.revalidate();
-            mMainPanel.repaint();
+                emptyBox.getChildren().add(emptyLabel);
+                mUsersContainer.getChildren().add(emptyBox);
+            }
         });
     }
 
@@ -368,25 +465,21 @@ public class UserListView extends AbstractComponent implements IUserListView {
             return;
         }
 
-        // Pour chaque utilisateur affiché
-        for (User user : mDisplayedUsers) {
-            UserFollowButtons actionButtons = mUserButtons.get(user.getUuid());
+        Platform.runLater(() -> {
+            // Pour chaque utilisateur affiché
+            for (User user : mDisplayedUsers) {
+                UserFollowButtons actionButtons = mUserButtons.get(user.getUuid());
 
-            if (actionButtons != null) {
-                // Vérifier si l'utilisateur connecté suit l'utilisateur courant
-                boolean isFollowing = connectedUser.isFollowing(user);
-                boolean isCurrentUser = user.getUuid().equals(connectedUser.getUuid());
+                if (actionButtons != null) {
+                    // Vérifier si l'utilisateur connecté suit l'utilisateur courant
+                    boolean isFollowing = connectedUser.isFollowing(user);
+                    boolean isCurrentUser = user.getUuid().equals(connectedUser.getUuid());
 
-                actionButtons.updateVisibility(isFollowing, isCurrentUser);
-            } else {
-                System.out.println("Pas de boutons trouvés pour l'utilisateur @" + user.getUserTag());
+                    actionButtons.updateVisibility(isFollowing, isCurrentUser);
+                } else {
+                    System.out.println("Pas de boutons trouvés pour l'utilisateur @" + user.getUserTag());
+                }
             }
-        }
-
-        // Forcer la mise à jour de l'affichage
-        SwingUtilities.invokeLater(() -> {
-            mUsersPanel.revalidate();
-            mUsersPanel.repaint();
         });
     }
 
@@ -403,10 +496,10 @@ public class UserListView extends AbstractComponent implements IUserListView {
      * Classe interne pour gérer les boutons de suivi/non-suivi d'un utilisateur
      */
     private static class UserFollowButtons {
-        private final JButton followButton;
-        private final JButton unfollowButton;
+        private final Button followButton;
+        private final Button unfollowButton;
 
-        public UserFollowButtons(JButton followButton, JButton unfollowButton) {
+        public UserFollowButtons(Button followButton, Button unfollowButton) {
             this.followButton = followButton;
             this.unfollowButton = unfollowButton;
         }

@@ -1,27 +1,44 @@
 package main.java.com.ubo.tp.message.ihm.component.message;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import javax.swing.JScrollBar;
-import javax.swing.SwingUtilities;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.embed.swing.JFXPanel;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 
 import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
@@ -29,23 +46,26 @@ import main.java.com.ubo.tp.message.core.session.ISession;
 import main.java.com.ubo.tp.message.datamodel.Message;
 import main.java.com.ubo.tp.message.datamodel.User;
 import main.java.com.ubo.tp.message.ihm.component.AbstractComponent;
-import main.java.com.ubo.tp.message.ihm.utils.AvatarUtils;
-
 
 /**
- * Vue pour la gestion des messages
+ * Vue pour la gestion des messages en JavaFX
  */
 public class MessageView extends AbstractComponent implements IMessageView {
 
     /**
-     * Hauteur d'une vignette de message
+     * Taille de l'avatar
      */
-    protected static final int MESSAGE_PANEL_HEIGHT = 120;
+    protected static final int AVATAR_SIZE = 40;
 
     /**
-     * Hauteur de l'avatar
+     * Panel principal Swing
      */
-    protected static final int AVATAR_SIZE = 50;
+    protected JPanel mMainPanel;
+
+    /**
+     * Panel JavaFX
+     */
+    protected JFXPanel jfxPanel;
 
     /**
      * Référence au contrôleur
@@ -57,36 +77,13 @@ public class MessageView extends AbstractComponent implements IMessageView {
      */
     protected ISession mSession;
 
-
-    /**
-     * Panel principal
-     */
-    protected JPanel mMainPanel;
-
-    /**
-     * Panel contenant la liste des messages
-     */
-    protected JPanel mMessagesPanel;
-
-    /**
-     * Champ de recherche
-     */
-    protected JTextField mSearchField;
-
-    /**
-     * Champ de saisie de message
-     */
-    protected JTextArea mMessageField;
-
-    /**
-     * Label affichant le nombre de caractères restants
-     */
-    protected JLabel mCharCountLabel;
-
-    /**
-     * Bouton d'envoi de message
-     */
-    protected JButton mSendButton;
+    // Composants JavaFX
+    protected VBox mMessagesContainer;
+    protected ScrollPane mScrollPane;
+    protected TextField mSearchField;
+    protected TextArea mMessageField;
+    protected Label mCharCountLabel;
+    protected Button mSendButton;
 
     /**
      * Format de date pour l'affichage des messages
@@ -119,166 +116,245 @@ public class MessageView extends AbstractComponent implements IMessageView {
     }
 
     /**
-     * Initialise les composants graphiques
+     * Initialisation des composants graphiques
      */
     protected void initComponents() {
+        // Configuration du layout Swing
+        mMainPanel = new JPanel(new BorderLayout());
+
+        // Création du panel JavaFX
+        jfxPanel = new JFXPanel();
+        mMainPanel.add(jfxPanel, BorderLayout.CENTER);
+
+        // Initialiser le contenu JavaFX sur le thread JavaFX
+        Platform.runLater(() -> createJavaFXContent());
+    }
+
+    /**
+     * Création du contenu JavaFX
+     */
+    private void createJavaFXContent() {
         // Panel principal
-        mMainPanel = new JPanel(new BorderLayout(0, 0));
-        mMainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        BorderPane mainPane = new BorderPane();
+        mainPane.setPadding(new Insets(10));
+        mainPane.setStyle("-fx-background-color: #f8f9fa;");
+
+        // Barre supérieure avec titre et bouton accueil
+        HBox topBar = createTopBar();
+        mainPane.setTop(topBar);
+
+        // Container principal pour les messages et la saisie
+        VBox centerContainer = new VBox(10);
+
+        // Zone des messages
+        createMessagesArea(centerContainer);
+
+        // Zone de saisie de nouveau message
+        createMessageInputArea(centerContainer);
+
+        mainPane.setCenter(centerContainer);
+
+        // Zone de recherche
+        HBox searchBar = createSearchBar();
+        mainPane.setBottom(searchBar);
+
+        // Création de la scène JavaFX
+        Scene scene = new Scene(mainPane);
+        jfxPanel.setScene(scene);
+    }
+
+    /**
+     * Création de la barre supérieure
+     */
+    private HBox createTopBar() {
+        HBox topBar = new HBox();
+        topBar.setPadding(new Insets(0, 0, 10, 0));
+        topBar.setAlignment(Pos.CENTER);
 
         // Titre
-        JLabel titleLabel = new JLabel("Messages");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        Label titleLabel = new Label("Messages");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.setStyle("-fx-text-fill: #2c3e50;");
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        titleLabel.setAlignment(Pos.CENTER);
 
         // Bouton Page d'accueil
-        JButton homeButton = new JButton("Page d'accueil");
-        homeButton.setPreferredSize(new Dimension(150, 30));
-        homeButton.setBackground(new Color(230, 230, 250));
-        homeButton.setForeground(new Color(50, 50, 100));
-        homeButton.setFont(new Font("Arial", Font.BOLD, 12));
-        homeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Émission d'un événement pour retourner à la page d'accueil
-                EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
-            }
+        Button homeButton = new Button("Page d'accueil");
+        homeButton.setStyle(
+                "-fx-background-color: #e6e6fa; " +
+                        "-fx-text-fill: #323264; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-font-size: 12px; " +
+                        "-fx-padding: 8px 15px; " +
+                        "-fx-background-radius: 5px;"
+        );
+        homeButton.setOnAction(e -> {
+            // Émission d'un événement pour retourner à la page d'accueil
+            EventManager.getInstance().fireEvent(new NavigationEvents.ShowMainViewEvent());
         });
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel, BorderLayout.CENTER);
-        topPanel.add(homeButton, BorderLayout.EAST);
+        topBar.getChildren().addAll(titleLabel, homeButton);
 
-        // Panel pour la liste des messages
-        mMessagesPanel = new JPanel();
-        mMessagesPanel.setLayout(new BoxLayout(mMessagesPanel, BoxLayout.Y_AXIS));
-
-        // Scroll pane pour la liste des messages
-        JScrollPane scrollPane = new JScrollPane(mMessagesPanel);
-        scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Panel de recherche
-        JPanel searchPanel = createSearchPanel();
-
-        // Panel de saisie de message
-        JPanel messageInputPanel = createMessageInputPanel();
-
-        // Layout principal
-        JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
-        contentPanel.add(messageInputPanel, BorderLayout.SOUTH);
-
-        // Ajout des composants au panel principal
-        mMainPanel.add(topPanel, BorderLayout.NORTH);
-        mMainPanel.add(contentPanel, BorderLayout.CENTER);
-        mMainPanel.add(searchPanel, BorderLayout.SOUTH);
+        return topBar;
     }
 
     /**
-     * Crée le panel de recherche
+     * Création de la zone des messages
      */
-    protected JPanel createSearchPanel() {
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        searchPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+    private void createMessagesArea(VBox parent) {
+        // Container pour les messages
+        mMessagesContainer = new VBox(10);
+        mMessagesContainer.setPadding(new Insets(10));
 
-        JLabel searchLabel = new JLabel("Rechercher : ");
-        searchLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        // ScrollPane pour faire défiler les messages
+        mScrollPane = new ScrollPane(mMessagesContainer);
+        mScrollPane.setFitToWidth(true);
+        mScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        mScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        mScrollPane.setPrefHeight(400);  // Hauteur préférée
+        mScrollPane.setStyle(
+                "-fx-background: white; " +
+                        "-fx-border-color: #e0e0e0; " +
+                        "-fx-background-color: white; " +
+                        "-fx-border-radius: 5px; " +
+                        "-fx-background-radius: 5px;"
+        );
 
-        mSearchField = new JTextField();
-        mSearchField.setPreferredSize(new Dimension(200, 30));
-        mSearchField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (mActionListener != null) {
-                    mActionListener.onSearchMessagesRequested(mSearchField.getText().trim());
-                }
-            }
+        // Pour faire défiler automatiquement vers le bas quand de nouveaux messages sont ajoutés
+        mMessagesContainer.heightProperty().addListener((observable, oldValue, newValue) -> {
+            mScrollPane.setVvalue(1.0);
         });
 
-        JButton searchButton = new JButton("Rechercher");
-        searchButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mActionListener != null) {
-                    mActionListener.onSearchMessagesRequested(mSearchField.getText().trim());
-                }
-            }
-        });
-
-        JButton resetButton = new JButton("Réinitialiser");
-        resetButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                mSearchField.setText("");
-                if (mActionListener != null) {
-                    mActionListener.onRefreshMessagesRequested();
-                }
-            }
-        });
-
-        searchPanel.add(searchLabel);
-        searchPanel.add(mSearchField);
-        searchPanel.add(searchButton);
-        searchPanel.add(resetButton);
-
-        return searchPanel;
+        VBox.setVgrow(mScrollPane, Priority.ALWAYS);
+        parent.getChildren().add(mScrollPane);
     }
 
     /**
-     * Crée le panel de saisie de message
+     * Création de la zone de saisie de message
      */
-    protected JPanel createMessageInputPanel() {
-        JPanel messageInputPanel = new JPanel(new BorderLayout(10, 0));
-        messageInputPanel.setBorder(BorderFactory.createTitledBorder("Nouveau message"));
+    private void createMessageInputArea(VBox parent) {
+        VBox messageInputBox = new VBox(5);
+        messageInputBox.setPadding(new Insets(10));
+        messageInputBox.setStyle(
+                "-fx-background-color: white; " +
+                        "-fx-border-color: #e0e0e0; " +
+                        "-fx-border-radius: 5px; " +
+                        "-fx-background-radius: 5px;"
+        );
 
-        // Champ de saisie de message
-        mMessageField = new JTextArea();
-        mMessageField.setLineWrap(true);
-        mMessageField.setWrapStyleWord(true);
-        mMessageField.setRows(3);
-        mMessageField.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        mMessageField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                updateCharacterCount();
-            }
+        // Titre
+        Label inputTitle = new Label("Nouveau message");
+        inputTitle.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        inputTitle.setStyle("-fx-text-fill: #2c3e50;");
+
+        // Champ de saisie
+        mMessageField = new TextArea();
+        mMessageField.setPrefRowCount(3);
+        mMessageField.setWrapText(true);
+        mMessageField.setStyle(
+                "-fx-border-color: #e0e0e0; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-font-size: 14px;"
+        );
+
+        // Écouteur pour la mise à jour du compteur de caractères
+        mMessageField.textProperty().addListener((observable, oldValue, newValue) -> {
+            updateCharacterCount();
         });
+
+        // Barre inférieure avec compteur et bouton
+        HBox bottomBar = new HBox(10);
+        bottomBar.setPadding(new Insets(5, 0, 0, 0));
+        bottomBar.setAlignment(Pos.CENTER_RIGHT);
 
         // Compteur de caractères
-        mCharCountLabel = new JLabel("0/200");
-        mCharCountLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        mCharCountLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        mCharCountLabel = new Label("0/200");
+        mCharCountLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 12));
 
         // Bouton d'envoi
-        mSendButton = new JButton("Envoyer");
-        mSendButton.setPreferredSize(new Dimension(100, 30));
-        mSendButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mActionListener != null) {
-                    mActionListener.onSendMessageRequested(mMessageField.getText());
-                }
+        mSendButton = new Button("Envoyer");
+        mSendButton.setStyle(
+                "-fx-background-color: #4e73df; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-padding: 8px 15px; " +
+                        "-fx-background-radius: 5px;"
+        );
+        mSendButton.setOnAction(e -> {
+            if (mActionListener != null) {
+                mActionListener.onSendMessageRequested(mMessageField.getText());
             }
         });
 
-        // Panel pour le bouton d'envoi et le compteur
-        JPanel buttonPanel = new JPanel(new BorderLayout());
-        buttonPanel.add(mCharCountLabel, BorderLayout.WEST);
-        buttonPanel.add(mSendButton, BorderLayout.EAST);
-        buttonPanel.setBorder(new EmptyBorder(5, 0, 0, 0));
+        // Ajout du spacer pour pousser le compteur à gauche et le bouton à droite
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Scroll pane pour le champ de message
-        JScrollPane scrollPane = new JScrollPane(mMessageField);
+        bottomBar.getChildren().addAll(mCharCountLabel, spacer, mSendButton);
 
-        // Assemblage du panel
-        messageInputPanel.add(scrollPane, BorderLayout.CENTER);
-        messageInputPanel.add(buttonPanel, BorderLayout.SOUTH);
+        // Assemblage du panel de saisie
+        messageInputBox.getChildren().addAll(inputTitle, mMessageField, bottomBar);
+        parent.getChildren().add(messageInputBox);
+    }
 
-        return messageInputPanel;
+    /**
+     * Création de la barre de recherche
+     */
+    private HBox createSearchBar() {
+        HBox searchBar = new HBox(10);
+        searchBar.setPadding(new Insets(10, 0, 0, 0));
+        searchBar.setAlignment(Pos.CENTER);
+
+        // Label
+        Label searchLabel = new Label("Rechercher : ");
+        searchLabel.setFont(Font.font("Arial", 14));
+
+        // Champ de recherche
+        mSearchField = new TextField();
+        mSearchField.setPrefWidth(200);
+        mSearchField.setStyle("-fx-padding: 5px; -fx-font-size: 14px;");
+
+        // Écouteur pour la recherche en temps réel
+        mSearchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (mActionListener != null) {
+                mActionListener.onSearchMessagesRequested(newValue.trim());
+            }
+        });
+
+        // Bouton de recherche
+        Button searchButton = new Button("Rechercher");
+        searchButton.setStyle(
+                "-fx-background-color: #f8f9fa; " +
+                        "-fx-text-fill: #495057; " +
+                        "-fx-border-color: #ced4da; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-padding: 5px 10px;"
+        );
+        searchButton.setOnAction(e -> {
+            if (mActionListener != null) {
+                mActionListener.onSearchMessagesRequested(mSearchField.getText().trim());
+            }
+        });
+
+        // Bouton de réinitialisation
+        Button resetButton = new Button("Réinitialiser");
+        resetButton.setStyle(
+                "-fx-background-color: #f8f9fa; " +
+                        "-fx-text-fill: #495057; " +
+                        "-fx-border-color: #ced4da; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-padding: 5px 10px;"
+        );
+        resetButton.setOnAction(e -> {
+            mSearchField.setText("");
+            if (mActionListener != null) {
+                mActionListener.onRefreshMessagesRequested();
+            }
+        });
+
+        searchBar.getChildren().addAll(searchLabel, mSearchField, searchButton, resetButton);
+
+        return searchBar;
     }
 
     /**
@@ -290,20 +366,21 @@ public class MessageView extends AbstractComponent implements IMessageView {
 
         // Changer la couleur selon le nombre de caractères
         if (count > 200) {
-            mCharCountLabel.setForeground(Color.RED);
-            mSendButton.setEnabled(false);
+            mCharCountLabel.setStyle("-fx-text-fill: red;");
+            mSendButton.setDisable(true);
         } else {
-            mCharCountLabel.setForeground(Color.BLACK);
-            mSendButton.setEnabled(true);
+            mCharCountLabel.setStyle("-fx-text-fill: black;");
+            mSendButton.setDisable(false);
         }
     }
 
     /**
      * Crée un panel pour un message
      */
-    protected JPanel createMessagePanel(Message message) {
-        // Panel principal du message
-        JPanel messagePanel = new JPanel(new GridBagLayout());
+    protected VBox createMessagePanel(Message message) {
+        // Panel principal pour le message
+        VBox messageBox = new VBox(5);
+        messageBox.setPadding(new Insets(10));
 
         // Récupération de l'utilisateur connecté
         User connectedUser = null;
@@ -317,151 +394,158 @@ public class MessageView extends AbstractComponent implements IMessageView {
             isMyMessage = connectedUser.getUuid().equals(message.getSender().getUuid());
         }
 
-        // Couleur de fond différente pour les messages de l'utilisateur connecté
+        // Style selon l'émetteur du message
         if (isMyMessage) {
-            // Couleur verte distincte pour vos propres messages
-            messagePanel.setBackground(new Color(230, 255, 230)); // Vert plus visible
-            messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 3, 1, 0, new Color(50, 180, 50)),
-                    new EmptyBorder(10, 10, 10, 10)));
+            messageBox.setStyle(
+                    "-fx-background-color: #e6ffe6; " +
+                            "-fx-border-color: #32b432; " +
+                            "-fx-border-width: 0 0 0 3; " +
+                            "-fx-background-radius: 5px; " +
+                            "-fx-border-radius: 5px;"
+            );
         } else {
-            // Fond neutre pour les autres messages
-            messagePanel.setBackground(new Color(250, 250, 255)); // Très léger bleu
-            messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
-                    new EmptyBorder(10, 10, 10, 10)));
+            messageBox.setStyle(
+                    "-fx-background-color: #fafafa; " +
+                            "-fx-border-color: #e0e0e0; " +
+                            "-fx-border-width: 1; " +
+                            "-fx-background-radius: 5px; " +
+                            "-fx-border-radius: 5px;"
+            );
         }
 
-        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, MESSAGE_PANEL_HEIGHT));
+        // En-tête du message
+        HBox headerBox = new HBox(10);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Contraintes pour le layout
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(2, 5, 2, 5);
-        gbc.fill = GridBagConstraints.VERTICAL;
-        gbc.gridheight = 1;
-        gbc.weighty = 1.0;
+        // Avatar
+        StackPane avatarPane = new StackPane();
+        avatarPane.setMinSize(AVATAR_SIZE, AVATAR_SIZE);
+        avatarPane.setMaxSize(AVATAR_SIZE, AVATAR_SIZE);
 
         // Récupération de l'utilisateur émetteur
         User sender = message.getSender();
 
-        // Avatar
-        JLabel avatarLabel = new JLabel();
-        avatarLabel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        // Avatar avec effet circulaire
+        Circle avatarCircle = new Circle(AVATAR_SIZE / 2);
+        avatarCircle.setFill(Color.LIGHTGRAY);
+
+        ImageView avatarImageView = new ImageView();
+        avatarImageView.setFitWidth(AVATAR_SIZE);
+        avatarImageView.setFitHeight(AVATAR_SIZE);
+        avatarImageView.setPreserveRatio(true);
+
+        // Label de repli pour l'avatar
+        Label avatarFallbackLabel = new Label("?");
+        avatarFallbackLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        avatarFallbackLabel.setStyle("-fx-text-fill: #6c757d;");
 
         // Chargement de l'avatar si disponible
-        AvatarUtils.displayAvatar(avatarLabel, sender.getAvatarPath(), AVATAR_SIZE, "?");
+        if (sender.getAvatarPath() != null && !sender.getAvatarPath().isEmpty()) {
+            File avatarFile = new File(sender.getAvatarPath());
+            if (avatarFile.exists()) {
+                try {
+                    Image avatarImage = new Image(avatarFile.toURI().toString(),
+                            AVATAR_SIZE, AVATAR_SIZE, true, true);
+                    avatarImageView.setImage(avatarImage);
+                    avatarImageView.setClip(new Circle(AVATAR_SIZE/2, AVATAR_SIZE/2, AVATAR_SIZE/2));
+                    avatarFallbackLabel.setVisible(false);
+                } catch (Exception e) {
+                    avatarImageView.setImage(null);
+                    avatarFallbackLabel.setVisible(true);
+                }
+            } else {
+                avatarImageView.setImage(null);
+                avatarFallbackLabel.setVisible(true);
+            }
+        } else {
+            avatarImageView.setImage(null);
+            avatarFallbackLabel.setVisible(true);
+        }
 
-        // Ajout de l'avatar
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridheight = 3;
-        gbc.weightx = 0.0;
-        messagePanel.add(avatarLabel, gbc);
+        avatarPane.getChildren().addAll(avatarCircle, avatarImageView, avatarFallbackLabel);
 
-        // Nom de l'utilisateur
-        JLabel nameLabel = new JLabel(sender.getName());
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        // Informations sur l'émetteur
+        VBox senderInfo = new VBox(2);
 
-        // Tag de l'utilisateur
-        JLabel tagLabel = new JLabel("@" + sender.getUserTag());
-        tagLabel.setFont(new Font("Arial", Font.ITALIC, 12));
-        tagLabel.setForeground(Color.GRAY);
+        // Nom de l'émetteur
+        Label nameLabel = new Label(sender.getName());
+        nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        nameLabel.setStyle("-fx-text-fill: #2c3e50;");
+
+        // Tag de l'émetteur
+        Label tagLabel = new Label("@" + sender.getUserTag());
+        tagLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 12));
+        tagLabel.setStyle("-fx-text-fill: #6c757d;");
+
+        senderInfo.getChildren().addAll(nameLabel, tagLabel);
 
         // Date du message
-        JLabel dateLabel = new JLabel(mDateFormat.format(new Date(message.getEmissionDate())));
-        dateLabel.setFont(new Font("Arial", Font.ITALIC, 10));
-        dateLabel.setForeground(Color.GRAY);
-        dateLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        Label dateLabel = new Label(mDateFormat.format(new Date(message.getEmissionDate())));
+        dateLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 11));
+        dateLabel.setStyle("-fx-text-fill: #6c757d;");
 
-        // Texte du message
-        JTextArea textArea = new JTextArea(message.getText());
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        textArea.setEditable(false);
-        textArea.setFont(new Font("Arial", Font.PLAIN, 14));
-        textArea.setBackground(messagePanel.getBackground());
-        textArea.setBorder(null);
+        // Spacer pour pousser la date à droite
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        // Ajout du nom
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.gridheight = 1;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        messagePanel.add(nameLabel, gbc);
+        // Assemblage de l'en-tête
+        headerBox.getChildren().addAll(avatarPane, senderInfo, headerSpacer, dateLabel);
 
-        // Ajout du tag
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        messagePanel.add(tagLabel, gbc);
+        // Zone de texte du message
+        Text messageText = new Text(message.getText());
+        messageText.setFont(Font.font("Arial", 14));
 
-        // Ajout de la date
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.gridheight = 2;
-        gbc.weightx = 0.0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
-        messagePanel.add(dateLabel, gbc);
+        TextFlow textFlow = new TextFlow(messageText);
+        textFlow.setPadding(new Insets(5, 5, 5, 5 + AVATAR_SIZE + 10)); // Indentation pour aligner avec l'en-tête
 
-        // Ajout du texte
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.CENTER;
-        messagePanel.add(textArea, gbc);
+        // Assemblage du panel de message
+        messageBox.getChildren().addAll(headerBox, textFlow);
 
-        return messagePanel;
+        return messageBox;
     }
 
     @Override
     public void updateMessageList(Set<Message> messages) {
-        // Vider la liste actuelle
-        mMessagesPanel.removeAll();
-        mDisplayedMessages.clear();
+        Platform.runLater(() -> {
+            // Vider la liste actuelle
+            mMessagesContainer.getChildren().clear();
+            mDisplayedMessages.clear();
 
-        // Convertir le Set en List pour pouvoir trier
-        List<Message> sortedMessages = new ArrayList<>(messages);
+            // Convertir le Set en List pour pouvoir trier
+            List<Message> sortedMessages = new ArrayList<>(messages);
 
-        // Trier les messages par date (du plus ancien au plus récent pour un affichage style chat)
-        sortedMessages.sort((m1, m2) -> Long.compare(m1.getEmissionDate(), m2.getEmissionDate()));
+            // Trier les messages par date (du plus ancien au plus récent pour un affichage style chat)
+            sortedMessages.sort((m1, m2) -> Long.compare(m1.getEmissionDate(), m2.getEmissionDate()));
 
-        // Ajouter les messages
-        for (Message message : sortedMessages) {
-            mDisplayedMessages.add(message);
-            JPanel messagePanel = createMessagePanel(message);
-            mMessagesPanel.add(messagePanel);
-        }
+            // Ajouter les messages
+            for (Message message : sortedMessages) {
+                mDisplayedMessages.add(message);
+                VBox messagePanel = createMessagePanel(message);
+                mMessagesContainer.getChildren().add(messagePanel);
+            }
 
-        // Si aucun message
-        if (mDisplayedMessages.isEmpty()) {
-            JLabel emptyLabel = new JLabel("Aucun message à afficher", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-            mMessagesPanel.add(emptyLabel);
-        }
+            // Si aucun message
+            if (mDisplayedMessages.isEmpty()) {
+                Label emptyLabel = new Label("Aucun message à afficher");
+                emptyLabel.setFont(Font.font("Arial", FontPosture.ITALIC, 14));
+                emptyLabel.setStyle("-fx-text-fill: #6c757d;");
+                emptyLabel.setPadding(new Insets(20));
+                emptyLabel.setMaxWidth(Double.MAX_VALUE);
+                emptyLabel.setAlignment(Pos.CENTER);
+                mMessagesContainer.getChildren().add(emptyLabel);
+            }
 
-        // Ajouter un panel vide à la fin pour éviter que le dernier message ne soit étiré
-        mMessagesPanel.add(Box.createVerticalGlue());
-
-        // Forcer la mise à jour de l'affichage
-        mMessagesPanel.revalidate();
-        mMessagesPanel.repaint();
-
-        // Faire défiler automatiquement vers le bas pour voir les messages les plus récents
-        SwingUtilities.invokeLater(() -> {
-            JScrollPane scrollPane = (JScrollPane) mMessagesPanel.getParent().getParent();
-            JScrollBar vertical = scrollPane.getVerticalScrollBar();
-            vertical.setValue(vertical.getMaximum());
+            // Faire défiler automatiquement vers le bas pour voir les messages les plus récents
+            mScrollPane.setVvalue(1.0);
         });
     }
 
     @Override
     public void resetMessageField() {
-        mMessageField.setText("");
-        updateCharacterCount();
+        Platform.runLater(() -> {
+            mMessageField.setText("");
+            updateCharacterCount();
+        });
     }
 
     @Override
