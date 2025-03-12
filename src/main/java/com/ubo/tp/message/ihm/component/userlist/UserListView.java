@@ -309,7 +309,7 @@ public class UserListView extends AbstractComponent implements IUserListView {
     }
 
     @Override
-    public void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap) {
+    public void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap, Map<UUID, Integer> followingCountMap) {
         // Vider la liste actuelle
         mUsersPanel.removeAll();
         mDisplayedUsers.clear();
@@ -331,9 +331,9 @@ public class UserListView extends AbstractComponent implements IUserListView {
 
         // Ajouter les utilisateurs uniques à l'affichage
         for (User user : uniqueUsers.values()) {
-            // Récupérer le nombre de followers depuis la map
+            // Récupérer le nombre de followers et following depuis les maps
             int followersCount = followersCountMap.getOrDefault(user.getUuid(), 0);
-            int followingCount = user.getFollows().size();
+            int followingCount = followingCountMap.getOrDefault(user.getUuid(), 0);
 
             mDisplayedUsers.add(user);
             JPanel userPanel = createUserPanel(user, followersCount, followingCount);

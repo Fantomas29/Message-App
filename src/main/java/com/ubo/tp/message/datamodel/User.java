@@ -55,7 +55,7 @@ public class User {
 		mUserTag = userTag;
 		mUserPassword = userPassword;
 		mName = name;
-		mFollows = follows;
+		mFollows = follows != null ? follows : new HashSet<>();
 		mAvatarPath = avatarPath;
 	}
 
@@ -119,7 +119,9 @@ public class User {
 	 * @param tagToRemove , tag à retirer.
 	 */
 	public void removeFollowing(String tagToRemove) {
-		this.mFollows.remove(tagToRemove);
+		if (tagToRemove != null) {
+			this.mFollows.remove(tagToRemove);
+		}
 	}
 
 	/**
@@ -128,7 +130,9 @@ public class User {
 	 * @param tagToFollow , tag à ajouter.
 	 */
 	public void addFollowing(String tagToFollow) {
-		this.mFollows.add(tagToFollow);
+		if (tagToFollow != null) {
+			this.mFollows.add(tagToFollow);
+		}
 	}
 
 	/**
@@ -151,22 +155,22 @@ public class User {
 	 * Indique si l'utilisateur suit l'utilisateur donné.
 	 */
 	public boolean isFollowing(User userToCheck) {
-		return this.getFollows().contains(userToCheck.getUserTag());
+		return userToCheck != null && this.mFollows.contains(userToCheck.getUserTag());
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-//	-> A activer... pourquoi ?
-//	public int hashCode() {
-//		int hashCode = 0;
-//
-//		if (this.mUuid != null) {
-//			hashCode = this.mUuid.hashCode();
-//		}
-//
-//		return hashCode;
-//	}
+	@Override
+	public int hashCode() {
+		int hashCode = 0;
+
+		if (this.mUuid != null) {
+			hashCode = this.mUuid.hashCode();
+		}
+
+		return hashCode;
+	}
 
 	@Override
 	public boolean equals(Object other) {

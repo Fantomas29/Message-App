@@ -16,8 +16,9 @@ public interface IUserListView extends IViewWithMessages {
      *
      * @param users Ensemble des utilisateurs à afficher
      * @param followersCountMap Carte des nombres d'abonnés pour chaque utilisateur
+     * @param followingCountMap Carte des nombres d'abonnements pour chaque utilisateur
      */
-    void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap);
+    void updateUserList(Set<User> users, Map<UUID, Integer> followersCountMap, Map<UUID, Integer> followingCountMap);
 
     /**
      * Met à jour le statut d'abonnement pour les utilisateurs

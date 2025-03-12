@@ -47,22 +47,53 @@ public class UserListController implements IUserListController, IUserListViewAct
         this.mView = view;
     }
 
+    /**
+     * Calcule le nombre réel d'utilisateurs suivis par un utilisateur
+     * @param user Utilisateur dont on veut connaître le nombre d'abonnements
+     * @param allUsers Ensemble de tous les utilisateurs
+     * @return Nombre d'abonnements réels
+     */
+    private int calculateFollowingCount(User user, Set<User> allUsers) {
+        if (user == null) {
+            return 0;
+        }
+
+        int count = 0;
+        Set<String> followedTags = user.getFollows();
+
+        // Pour chaque tag suivi
+        for (String tag : followedTags) {
+            // Vérifier s'il correspond à un utilisateur existant
+            for (User potentialUser : allUsers) {
+                if (potentialUser.getUserTag().equals(tag)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+
+        return count;
+    }
+
     @Override
     public void initUserList() {
         // Récupération de tous les utilisateurs
         Set<User> allUsers = mDatabase.getUsers();
 
-        // Précalculer les statistiques de followers
+        // Précalculer les statistiques
         Map<UUID, Integer> followersCountMap = new HashMap<>();
+        Map<UUID, Integer> followingCountMap = new HashMap<>();
+
         for (User user : allUsers) {
-            followersCountMap.put(
-                    user.getUuid(),
-                    mDatabase.getFollowersCount(user)
-            );
+            // Nombre d'abonnés (personnes qui suivent cet utilisateur)
+            followersCountMap.put(user.getUuid(), mDatabase.getFollowers(user).size());
+
+            // Nombre d'abonnements (personnes que suit cet utilisateur)
+            followingCountMap.put(user.getUuid(), calculateFollowingCount(user, allUsers));
         }
 
-        // Mise à jour de la vue avec les utilisateurs et leurs statistiques
-        mView.updateUserList(allUsers, followersCountMap);
+        // Mise à jour de la vue
+        mView.updateUserList(allUsers, followersCountMap, followingCountMap);
 
         // Mise à jour du statut d'abonnement
         User connectedUser = mSession.getConnectedUser();
@@ -73,7 +104,6 @@ public class UserListController implements IUserListController, IUserListViewAct
 
     @Override
     public void refreshUserList() {
-        // Réinitialisation de la liste des utilisateurs
         initUserList();
     }
 
@@ -108,8 +138,8 @@ public class UserListController implements IUserListController, IUserListViewAct
         // Écriture du fichier utilisateur
         mEntityManager.writeUserFile(connectedUser);
 
-        // Mise à jour de la vue
-        mView.updateFollowStatus(connectedUser);
+        // Rafraîchir la liste pour mettre à jour les statistiques
+        refreshUserList();
     }
 
     @Override
@@ -137,8 +167,8 @@ public class UserListController implements IUserListController, IUserListViewAct
         // Écriture du fichier utilisateur
         mEntityManager.writeUserFile(connectedUser);
 
-        // Mise à jour de la vue
-        mView.updateFollowStatus(connectedUser);
+        // Rafraîchir la liste pour mettre à jour les statistiques
+        refreshUserList();
     }
 
     @Override
@@ -153,8 +183,9 @@ public class UserListController implements IUserListController, IUserListViewAct
         Set<User> allUsers = mDatabase.getUsers();
         Set<User> filteredUsers = new HashSet<>();
 
-        // Map pour stocker les followers count
+        // Maps pour stocker les statistiques
         Map<UUID, Integer> followersCountMap = new HashMap<>();
+        Map<UUID, Integer> followingCountMap = new HashMap<>();
 
         // Filtre des utilisateurs selon le texte de recherche (tag ou nom)
         String lowerSearchText = searchText.toLowerCase();
@@ -164,16 +195,14 @@ public class UserListController implements IUserListController, IUserListViewAct
                     user.getName().toLowerCase().contains(lowerSearchText)) {
                 filteredUsers.add(user);
 
-                // Calculer le nombre de followers pour chaque utilisateur filtré
-                followersCountMap.put(
-                        user.getUuid(),
-                        mDatabase.getFollowersCount(user)
-                );
+                // Calculer les statistiques
+                followersCountMap.put(user.getUuid(), mDatabase.getFollowers(user).size());
+                followingCountMap.put(user.getUuid(), calculateFollowingCount(user, allUsers));
             }
         }
 
-        // Mise à jour de la vue avec les utilisateurs filtrés et leurs statistiques
-        mView.updateUserList(filteredUsers, followersCountMap);
+        // Mise à jour de la vue
+        mView.updateUserList(filteredUsers, followersCountMap, followingCountMap);
 
         // Mise à jour du statut d'abonnement
         User connectedUser = mSession.getConnectedUser();

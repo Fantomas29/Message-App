@@ -73,7 +73,15 @@ public class Database implements IDatabase {
 
 	@Override
 	public void modifiyMessage(Message messageToModify) {
-		// Le ré-ajout va écraser l'ancienne copie.
+		// Suppression de l'ancien message
+		for (Message msg : this.mMessages) {
+			if (msg.getUuid().equals(messageToModify.getUuid())) {
+				this.mMessages.remove(msg);
+				break;
+			}
+		}
+
+		// Ajout du nouveau message
 		this.mMessages.add(messageToModify);
 
 		// Notification des observateurs
@@ -106,7 +114,20 @@ public class Database implements IDatabase {
 
 	@Override
 	public void modifiyUser(User userToModify) {
-		// Le ré-ajout va écraser l'ancienne copie.
+		// Supprimer explicitement l'ancien utilisateur basé sur l'UUID
+		User userToRemove = null;
+		for (User user : this.mUsers) {
+			if (user.getUuid().equals(userToModify.getUuid())) {
+				userToRemove = user;
+				break;
+			}
+		}
+
+		if (userToRemove != null) {
+			this.mUsers.remove(userToRemove);
+		}
+
+		// Ajouter le nouvel utilisateur
 		this.mUsers.add(userToModify);
 
 		// Notification des observateurs
@@ -118,7 +139,7 @@ public class Database implements IDatabase {
 	@Override
 	public void clearMessages() {
 		// Parcours de la liste clonnée des messages
-		Set<Message> clonedMessages = this.mMessages;
+		Set<Message> clonedMessages = new HashSet<>(this.mMessages);
 		for (Message message : clonedMessages) {
 			// Suppression de chacun des messages
 			this.removeMessage(message);
@@ -128,7 +149,7 @@ public class Database implements IDatabase {
 	@Override
 	public void clearUsers() {
 		// Parcours de la liste clonnée des utilisateurs
-		Set<User> clonedUsers = this.mUsers;
+		Set<User> clonedUsers = new HashSet<>(this.mUsers);
 		for (User user : clonedUsers) {
 			// Suppression de chacun des utlisateurs
 			this.removeUser(user);
@@ -190,24 +211,14 @@ public class Database implements IDatabase {
 	public Set<User> getFollowers(User user) {
 		Set<User> followers = new HashSet<>();
 
-		// Parcours de tous les utilisateurs de la base
-		for (User otherUser : this.getUsers()) {
-			// Si le l'utilisateur courant suit l'utilisateur donné
-			if (otherUser.isFollowing(user)) {
-				followers.add(otherUser);
-			}
+		if (user == null) {
+			return followers;
 		}
 
-		return followers;
-	}
-
-	public Set<User> getFollowed(User user) {
-		Set<User> followers = new HashSet<>();
-
 		// Parcours de tous les utilisateurs de la base
 		for (User otherUser : this.getUsers()) {
-			// Si le l'utilisateur courant suit l'utilisateur donné
-			if (user.getFollows().contains(otherUser.getUserTag())) {
+			// Si l'utilisateur courant suit l'utilisateur donné
+			if (otherUser != null && otherUser.getFollows().contains(user.getUserTag())) {
 				followers.add(otherUser);
 			}
 		}
@@ -217,6 +228,9 @@ public class Database implements IDatabase {
 
 	@Override
 	public int getFollowersCount(User user) {
+		if (user == null) {
+			return 0;
+		}
 		return this.getFollowers(user).size();
 	}
 
