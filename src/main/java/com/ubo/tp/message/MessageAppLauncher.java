@@ -8,8 +8,6 @@ import main.java.com.ubo.tp.message.core.database.IDatabase;
 import main.java.com.ubo.tp.message.ihm.MessageApp;
 import main.mock.MessageAppMock;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.Properties;
 
 /**

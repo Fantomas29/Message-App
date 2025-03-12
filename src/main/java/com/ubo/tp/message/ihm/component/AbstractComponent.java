@@ -1,6 +1,5 @@
 package main.java.com.ubo.tp.message.ihm.component;
 
-import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 
 /**
@@ -38,13 +37,6 @@ public abstract class AbstractComponent implements IViewWithMessages {
                 title,
                 JOptionPane.INFORMATION_MESSAGE
         );
-    }
-
-    /**
-     * Méthode par défaut pour obtenir la vue
-     */
-    public JComponent getView() {
-        return getComponent();
     }
 
     public void destroy() {

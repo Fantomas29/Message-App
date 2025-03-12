@@ -221,20 +221,6 @@ public class MessageApp {
 	}
 
 	/**
-	 * Charge la configuration de l'application
-	 */
-	protected void loadConfiguration() {
-		// Chargement du répertoire d'échange depuis la configuration si disponible
-		String configuredDirectory = this.getConfiguredDirectoryPath();
-		if (configuredDirectory != null && !configuredDirectory.isEmpty()) {
-			File directory = new File(configuredDirectory);
-			if (directory.exists() && directory.isDirectory()) {
-				this.initDirectory(configuredDirectory);
-			}
-		}
-	}
-
-	/**
 	 * Quitte l'application proprement.
 	 */
 	public void exitApplication() {
@@ -293,30 +279,12 @@ public class MessageApp {
 	}
 
 	/**
-	 * Obtient le gestionnaire d'entités de l'application.
-	 *
-	 * @return Le gestionnaire d'entités
-	 */
-	public EntityManager getEntityManager() {
-		return mEntityManager;
-	}
-
-	/**
 	 * Obtient la session de l'application.
 	 *
 	 * @return La session
 	 */
 	public ISession getSession() {
 		return mSession;
-	}
-
-	/**
-	 * Obtient l'interface utilisateur de l'application.
-	 *
-	 * @return L'interface utilisateur
-	 */
-	public MessageAppIHM getIHM() {
-		return mIHM;
 	}
 
 	/**
@@ -347,30 +315,12 @@ public class MessageApp {
 	}
 
 	/**
-	 * Obtient le contrôleur de profil
-	 *
-	 * @return Le contrôleur de profil
-	 */
-	public IProfileController getProfileController() {
-		return mProfileController;
-	}
-
-	/**
 	 * Obtient la vue de liste des utilisateurs
 	 *
 	 * @return La vue de liste des utilisateurs
 	 */
 	public IUserListView getUserListView() {
 		return mUserListView;
-	}
-
-	/**
-	 * Obtient le contrôleur de liste des utilisateurs
-	 *
-	 * @return Le contrôleur de liste des utilisateurs
-	 */
-	public IUserListController getUserListController() {
-		return mUserListController;
 	}
 
 	/**
@@ -383,27 +333,11 @@ public class MessageApp {
 	}
 
 	/**
-	 * Obtient le contrôleur des messages
-	 *
-	 * @return Le contrôleur des messages
-	 */
-	public IMessageController getMessageController() {
-		return mMessageController;
-	}
-
-	/**
 	 * Affiche l'application.
 	 */
 	public void show() {
 		// Affichage de l'IHM
 		this.mIHM.show();
-	}
-
-	/**
-	 * Énumération des types de navigation possibles
-	 */
-	public enum NavigationType {
-		PROFILE, USER_LIST, MESSAGES, MAIN, LOGIN
 	}
 
 	public HomeController getHomeController() {

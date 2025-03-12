@@ -1,6 +1,0 @@
-#
-#Wed Mar 05 17:16:35 CET 2025
-Date=1741191395591
-Sender=52ca562b-7f53-4d90-b36c-706bc372f318
-Text=p
-UUID=daba2fc6-4fa5-49a5-a2a7-ebc3f1f802af

@@ -1,6 +1,0 @@
-#
-#Wed Mar 05 17:15:33 CET 2025
-Date=1741191333725
-Sender=09f24760-8488-4515-b091-2fad762224e5
-Text=tu fais quoi ?
-UUID=f76926ea-b71f-4dba-840b-53cfd3d06f6b

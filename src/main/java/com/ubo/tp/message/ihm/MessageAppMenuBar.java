@@ -20,7 +20,6 @@ import main.java.com.ubo.tp.message.core.event.EventManager;
 import main.java.com.ubo.tp.message.core.event.IEventListener;
 import main.java.com.ubo.tp.message.core.event.NavigationEvents;
 import main.java.com.ubo.tp.message.core.event.SessionEvents;
-import main.java.com.ubo.tp.message.datamodel.User;
 
 /**
  * Classe de la barre de menu de l'application.

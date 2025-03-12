@@ -1,6 +1,0 @@
-#
-#Tue Mar 11 14:34:37 CET 2025
-Date=1741700077649
-Sender=09f24760-8488-4515-b091-2fad762224e5
-Text=toto
-UUID=2358e1c6-bcfa-4eeb-8fbe-399fa6a89813
