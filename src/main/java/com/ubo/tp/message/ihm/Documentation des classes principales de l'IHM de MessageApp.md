@@ -1,105 +1,107 @@
-# Documentation des classes principales de l'IHM de MessageApp
+# Explication du fonctionnement de MessageApp
 
-Ce document décrit les responsabilités et les rôles des classes principales du package `/ihm` de l'application MessageApp.
+## Vue d'ensemble de l'architecture
 
-## Classes principales
+MessageApp est une application Java Swing organisée selon le pattern MVC (Modèle-Vue-Contrôleur) qui permet aux utilisateurs de s'inscrire, se connecter, publier des messages et suivre d'autres utilisateurs. L'application utilise un système d'événements centralisé pour faciliter la communication entre ses différents composants.
 
-### MessageApp.java
-**Rôle :** Classe technique principale de l'application (Contrôleur principal)
-**Responsabilités :**
-- Coordonne l'initialisation et le fonctionnement global de l'application
-- Gère l'initialisation des différents composants (contrôleurs, vues, etc.)
-- Maintient les références vers les composants principaux (database, session, etc.)
-- Gère la configuration de l'application
-- Coordonne les interactions entre les composants
-- Dirige la navigation entre les différentes vues
+## Le système d'événements
 
-MessageApp est le point d'entrée principal pour les fonctionnalités de l'application, jouant le rôle de contrôleur de niveau supérieur conformément au pattern MVC.
+Le cœur de l'application repose sur un système d'événements personnalisé qui permet un découplage efficace entre les composants. Voici comment il fonctionne:
 
-### MessageAppIHM.java
-**Rôle :** Interface utilisateur principale (Vue principale)
-**Responsabilités :**
-- Crée et gère la fenêtre principale de l'application
-- Initialise le look and feel de l'interface utilisateur
-- Gère le CardLayout pour afficher les différentes vues
-- S'occupe des transitions entre les différentes vues
-- Réagit aux événements de session (connexion/déconnexion)
-- Gère la barre de menu de l'application
+### 1. Composants principaux du système d'événements
 
-Cette classe est responsable de tous les aspects visuels de l'application, servant de conteneur pour toutes les vues spécifiques.
+- **EventManager (Singleton)**: Un gestionnaire centralisé qui associe des types d'événements à leurs listeners et distribue les événements.
+- **IEvent**: Interface marqueur que tous les événements implémentent.
+- **IEventListener**: Interface pour les listeners qui réagissent aux événements.
 
-### HomeController.java
-**Rôle :** Contrôleur de la vue d'accueil
-**Responsabilités :**
-- Gère les actions utilisateur sur la vue d'accueil
-- Implémente l'interface IHomeViewActionListener pour répondre aux événements de la vue
-- Délègue les actions à MessageApp ou à la session selon les besoins
-- Gère la navigation vers les différentes sections de l'application
+```java
+// Exemple d'utilisation du EventManager
+// Enregistrement d'un listener
+EventManager.getInstance().addListener(UserLoggedInEvent.class, event -> {
+    // Traitement de l'événement
+});
 
-Ce contrôleur sert d'intermédiaire entre la vue d'accueil et le reste de l'application.
+// Émission d'un événement
+EventManager.getInstance().fireEvent(new UserLoggedInEvent(user));
+```
 
-### HomeView.java
-**Rôle :** Vue d'accueil principale de l'application
-**Responsabilités :**
-- Affiche le dashboard principal avec les cartes de navigation
-- Affiche les informations de l'utilisateur connecté
-- Permet d'accéder aux différentes fonctionnalités (profil, messages, utilisateurs, etc.)
-- Affiche le badge de notifications pour les messages non lus
-- Communique avec le HomeController via l'interface IHomeViewActionListener
+### 2. Catégories d'événements
 
-C'est la vue centrale que l'utilisateur voit après s'être connecté.
+L'application définit plusieurs types d'événements organisés en classes:
 
-### IHomeViewActionListener.java
-**Rôle :** Interface de callback pour les actions de la vue d'accueil
-**Responsabilités :**
-- Définit les méthodes que le contrôleur doit implémenter pour réagir aux actions de l'utilisateur
-- Établit un contrat clair entre la vue et le contrôleur
-- Facilite le découplage entre la vue et le contrôleur
+- **NavigationEvents**: Gèrent la navigation entre les différentes vues
+    - `ShowLoginViewEvent`
+    - `ShowMainViewEvent`
+    - `ShowProfileViewEvent`
+    - `ShowUserListViewEvent`
+    - `ShowMessageViewEvent`
 
-Cette interface permet à la vue de communiquer avec son contrôleur sans avoir de dépendance directe.
+- **SessionEvents**: Gèrent les changements liés à la session utilisateur
+    - `UserLoggedInEvent`
+    - `UserLoggedOutEvent`
+    - `UserProfileUpdatedEvent`
 
-### MessageAppMenuBar.java
-**Rôle :** Barre de menu de l'application
-**Responsabilités :**
-- Crée et gère la barre de menu de l'application
-- Ajoute/supprime dynamiquement des menus selon l'état de la session
-- Réagit aux événements utilisateur sur les menus
-- Délègue les actions aux composants appropriés
+- **MessageEvents**: Gèrent les notifications de nouveaux messages
+    - `FollowedUserMessageEvent`
 
-Cette classe encapsule toute la logique liée à la barre de menu, simplifiant la classe MessageAppIHM.
+## Flux de communication dans l'application
 
-### MessageNotificationManager.java
-**Rôle :** Gestionnaire des notifications de messages non lus
-**Responsabilités :**
-- Suit les messages non lus
-- Notifie les observateurs du changement du nombre de messages non lus
-- Fournit des méthodes pour ajouter/supprimer des écouteurs
-- Permet de marquer tous les messages comme lus
+La communication entre composants s'effectue de trois manières:
 
-Cette classe gère l'état des notifications de messages pour l'application.
+1. **Communication directe**: Les contrôleurs possèdent des références vers leurs vues et peuvent les appeler directement.
 
-### NotificationManager.java
-**Rôle :** Gestionnaire d'affichage des notifications visuelles
-**Responsabilités :**
-- Crée et affiche des notifications visuelles pour les nouveaux messages
-- Écoute les événements de nouveaux messages des utilisateurs suivis
-- Gère l'apparence et le comportement des notifications (position, disparition automatique, etc.)
+2. **Listeners d'actions**: Les vues définissent des interfaces d'écouteurs (comme `ILoginViewActionListener`) que les contrôleurs implémentent. Exemple:
 
-Cette classe se concentre sur l'aspect visuel des notifications.
+```java
+// Dans LoginView
+public void login() {
+    String userTag = mLoginUserTagField.getText().trim();
+    String password = new String(mLoginPasswordField.getPassword());
 
-## Interaction entre les composants
+    if (mActionListener != null) {
+        mActionListener.onLoginRequested(userTag, password);
+    }
+}
 
-Dans cette architecture MVC:
+// Dans LoginController (qui implémente ILoginViewActionListener)
+@Override
+public void onLoginRequested(String userTag, String password) {
+    this.loginUser(userTag, password);
+}
+```
 
-1. **Modèle**: Représenté par les classes dans les packages `/datamodel` et `/core`
-2. **Vue**: Implémentée par `MessageAppIHM`, `HomeView` et les autres vues spécifiques
-3. **Contrôleur**: Géré par `MessageApp`, `HomeController` et les autres contrôleurs spécifiques
+3. **Système d'événements**: Utilisé pour la communication entre composants non directement liés.
 
-Le flux d'information typique est le suivant:
-- L'utilisateur interagit avec une vue (par exemple `HomeView`)
-- La vue notifie son contrôleur via une interface de listener (par exemple `IHomeViewActionListener`)
-- Le contrôleur met à jour le modèle si nécessaire
-- Le modèle notifie les observateurs des changements
-- Les contrôleurs mettent à jour les vues en conséquence
+```java
+// Lors d'une connexion réussie dans LoginController
+mSession.connect(foundUser);
+EventManager.getInstance().fireEvent(new SessionEvents.UserLoggedInEvent(foundUser));
 
-L'utilisation du système d'événements (`EventManager`) facilite la communication entre les composants tout en maintenant un faible couplage.
+// Dans MessageAppIHM, qui écoute cet événement
+EventManager.getInstance().addListener(SessionEvents.UserLoggedInEvent.class, 
+    event -> onUserLogin(event.getUser()));
+```
+
+## Cycle de vie typique d'une action utilisateur
+
+Prenons l'exemple d'une connexion utilisateur:
+
+1. L'utilisateur saisit ses identifiants dans `LoginView` et clique sur "Se connecter"
+2. `LoginView` appelle `mActionListener.onLoginRequested()`
+3. `LoginController` (qui implémente l'interface listener) vérifie les identifiants
+4. Si la connexion réussit, le contrôleur:
+    - Met à jour la session: `mSession.connect(foundUser)`
+    - Émet un événement: `EventManager.getInstance().fireEvent(new UserLoggedInEvent(foundUser))`
+5. Tous les composants qui écoutent cet événement réagissent:
+    - `MessageAppIHM` affiche la vue principale (home)
+    - `HomeView` met à jour les informations utilisateur
+    - D'autres composants peuvent également réagir à cet événement
+
+## Avantages de cette architecture
+
+1. **Découplage**: Les composants peuvent communiquer sans dépendances directes
+2. **Extensibilité**: Facile d'ajouter de nouveaux composants qui réagissent aux événements existants
+3. **Maintenance**: Les responsabilités sont clairement séparées
+4. **Testabilité**: Les composants peuvent être testés indépendamment
+
+Cette architecture événementielle permet à l'application d'être modulaire et flexible, tout en maintenant une séparation claire des responsabilités selon le pattern MVC.
